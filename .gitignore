@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Entornos virtuales
+.venv/
+env/
+venv/
+ENV/
+
+# PyInstaller / Build
+build/
+dist/
+
+# Datos operativos locales del bot (nunca commitear)
+logs/*.log
+logs/*.png
+downloads/*
+!downloads/.gitkeep
+user_data/
+browsers/
+*.db
+*.db-journal
+*.sqlite3
+
+# Credenciales y variables locales sensibles
+.env
+.env.*
+*.pem
+*.key
+secrets.json
+
+# Testing & Linters
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editores y SO
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

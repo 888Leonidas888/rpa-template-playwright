@@ -1,0 +1,1 @@
+"""Notification dispatchers and adapters."""
