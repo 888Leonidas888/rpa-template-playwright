@@ -27,12 +27,12 @@ pyinstaller --noconfirm --onedir --console `
     --hidden-import "requests" `
     main.py
 
-# 3. Copiar navegador congelado Chromium portable (si existe)
+# 3. Copiar navegador congelado Chromium portable (opcional, por defecto usa Chrome/Edge del sistema)
 if (Test-Path "browsers") {
     Write-Host "Paso 2: Copiando navegador portable a $DistPath\browsers..." -ForegroundColor Yellow
     Copy-Item -Path "browsers" -Destination "$DistPath\browsers" -Recurse -Force
 } else {
-    Write-Warning "AVISO: No se encontro la carpeta browsers/. Si desea distribuir el paquete de forma autonoma, ejecute primero: python main.py install-browser"
+    Write-Host "Paso 2: Operacion con navegadores nativos del sistema (Google Chrome / Microsoft Edge)." -ForegroundColor Yellow
 }
 
 # 4. Crear estructura de carpetas operativas junto al binario

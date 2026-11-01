@@ -18,7 +18,7 @@ from config.security import (
 from config.settings import BROWSERS_DIR
 from core.database import BotDatabase
 from core.models import TaskItem
-from infrastructure.browser_manager import BrowserManager
+from infrastructure.browser_manager import BrowserManager, BrowserNotFoundError
 from infrastructure.notifiers.base_notifier import BaseNotifier
 from infrastructure.notifiers.graph_notifier import GraphNotifier
 from infrastructure.notifiers.webhook_notifier import WebhookNotifier
@@ -114,12 +114,22 @@ def handle_run(args: argparse.Namespace) -> None:
     item_ids = [item.strip() for item in args.items.split(",") if item.strip()] if args.items else ["DEMO-1001", "DEMO-1002"]
     task_items = [TaskItem(item_id=item_id) for item_id in item_ids]
 
-    headless = not args.no_headless
+    headless = args.headless
     browser_manager = BrowserManager(headless=headless)
     orchestrator = BotOrchestratorService(browser_manager=browser_manager, notifier=notifier)
 
     logger.info("Starting run for %d items (headless=%s)...", len(task_items), headless)
-    results = orchestrator.process_items(task_items, force_reprocess=args.force)
+    try:
+        results = orchestrator.process_items(task_items, force_reprocess=args.force)
+    except BrowserNotFoundError as e:
+        logger.error("Browser launch failed: %s", e)
+        print(f"\n[ERROR] {e}")
+        if notifier:
+            notifier.send_notification(
+                subject="[RPA Bot Error] Browser Launch Failed",
+                body_html=f"<p><strong>Execution Aborted:</strong> {e}</p>",
+            )
+        sys.exit(1)
 
     # Print summary table to console
     print("\n================== EXECUTION SUMMARY ==================")
@@ -140,7 +150,12 @@ def main() -> None:
     # 1. run command
     run_parser = subparsers.add_parser("run", help="Execute bot automated workflow")
     run_parser.add_argument("--items", type=str, help="Comma-separated IDs of items to process")
-    run_parser.add_argument("--no-headless", action="store_true", help="Launch browser with visible window")
+    run_parser.add_argument(
+        "--headless",
+        action="store_true",
+        default=False,
+        help="Run browser in background without visible window (default: visible GUI window)",
+    )
     run_parser.add_argument("--notify", action="store_true", help="Send alert upon completion")
     run_parser.add_argument("--force", action="store_true", help="Force re-processing of already completed items")
 

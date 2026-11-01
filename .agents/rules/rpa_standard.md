@@ -30,8 +30,9 @@ Queda estrictamente prohibido improvisar estructuras de carpetas alternativas (c
 
 ---
 
-## 4. Distribución y Empaquetado (PyInstaller)
-* **Navegador Embebido**: El ejecutable debe funcionar de forma autónoma utilizando la subcarpeta portable `browsers/` generada por `python main.py install-browser`.
+## 4. Estrategia de Navegación y Empaquetado
+* **Navegadores Nativos**: El bot debe conectarse por defecto a Google Chrome (`channel="chrome"`). Si no está disponible, debe conmutar automáticamente a Microsoft Edge (`channel="msedge"`). Si ninguno existe, debe fallar de forma controlada (`BrowserNotFoundError`) y notificar el error.
+* **Modo Headless**: Por defecto, la ejecución gráfica es visible para supervisión del operador. Si se especifica el flag `--headless`, se ejecuta en segundo plano.
 * **Script de Build**: El empaquetado debe realizarse exclusivamente mediante el script `build.ps1` configurado con `--onedir` y los `--hidden-import` requeridos.
 
 ---
