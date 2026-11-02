@@ -14,6 +14,10 @@ ENV/
 build/
 dist/
 
+# Carpeta de residuos o archivos temporales no-core
+.trash/
+.scratch/
+
 # Datos operativos locales del bot (nunca commitear)
 logs/*.log
 logs/*.png

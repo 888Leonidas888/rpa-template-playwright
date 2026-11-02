@@ -1,4 +1,4 @@
-"""Microsoft Graph API email notification dispatcher."""
+"""Despachador de notificaciones por correo utilizando Microsoft Graph API (Azure AD)."""
 
 import base64
 from pathlib import Path
@@ -6,31 +6,44 @@ from pathlib import Path
 import requests
 
 from config.logger_config import get_logger
-from config.security import get_notifier_credentials
+from config.security import get_graph_credentials
 from infrastructure.notifiers.base_notifier import BaseNotifier
 
 logger = get_logger()
 
 
 class GraphNotifier(BaseNotifier):
-    """Dispatches corporate email notifications using Microsoft Graph API."""
+    """Envia correos electronicos corporativos mediante Microsoft Graph API."""
 
-    def __init__(self) -> None:
-        """Initializes GraphNotifier loading DPAPI credentials."""
-        config = get_notifier_credentials()
-        if not config or config.get("provider") != "graph":
+    def __init__(self, recipients: list[str] | None = None) -> None:
+        """Inicializa el notificador recuperando las credenciales de Graph en DPAPI.
+
+        Args:
+            recipients: Lista opcional de correos destinatarios. Si se omite,
+                        se utilizan los guardados en la configuracion DPAPI.
+        """
+        config = get_graph_credentials()
+        if not config:
             raise ValueError(
-                "Microsoft Graph credentials not found or invalid in Windows Credential Manager."
+                "Credenciales de Microsoft Graph no configuradas en Windows Credential Manager. "
+                "Ejecute 'python main.py auth' para configurarlas."
             )
 
         self.tenant_id: str = config["tenant_id"]
         self.client_id: str = config["client_id"]
         self.client_secret: str = config["client_secret"]
         self.sender_email: str = config["sender_email"]
-        self.recipient_emails: list[str] = config.get("recipient_emails", [])
+
+        resolved_recipients = recipients or config.get("recipient_emails", [])
+        if not resolved_recipients:
+            raise ValueError(
+                "No se especificaron destinatarios para Microsoft Graph. "
+                "Proporcione correos separados por ';' mediante --emails o configúrelos en 'auth'."
+            )
+        self.recipient_emails: list[str] = resolved_recipients
 
     def _get_access_token(self) -> str:
-        """Requests an OAuth2 client_credentials token from Azure AD."""
+        """Solicita un token OAuth2 client_credentials a Azure AD."""
         token_url = f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token"
         data = {
             "client_id": self.client_id,
@@ -42,7 +55,7 @@ class GraphNotifier(BaseNotifier):
         response.raise_for_status()
         token = response.json().get("access_token")
         if not token:
-            raise ValueError("No access token returned by Azure AD.")
+            raise ValueError("Azure AD no retorno un token de acceso valido.")
         return str(token)
 
     def send_notification(
@@ -51,7 +64,16 @@ class GraphNotifier(BaseNotifier):
         body_html: str,
         attachments: list[Path] | None = None,
     ) -> bool:
-        """Sends an HTML email with optional attachments via Microsoft Graph API."""
+        """Envia un correo electronico HTML con adjuntos opcionales mediante Graph API.
+
+        Args:
+            subject: Asunto del mensaje.
+            body_html: Contenido HTML del cuerpo del correo.
+            attachments: Lista opcional de rutas a archivos adjuntos.
+
+        Returns:
+            bool: True si el envio fue confirmado por la API, False en caso contrario.
+        """
         try:
             token = self._get_access_token()
             headers = {
@@ -93,8 +115,8 @@ class GraphNotifier(BaseNotifier):
                 timeout=30,
             )
             response.raise_for_status()
-            logger.info("Notification email delivered successfully via Microsoft Graph.")
+            logger.info("Notificacion entregada exitosamente mediante Microsoft Graph API.")
             return True
         except Exception as e:
-            logger.error("Failed to send notification via Microsoft Graph: %s", e)
+            logger.error("Fallo el envio de notificacion mediante Microsoft Graph: %s", e)
             return False

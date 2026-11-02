@@ -31,9 +31,12 @@ PAGE_TIMEOUT_MS: int = 30000
 MAX_RETRY_ATTEMPTS: int = 3
 RETRY_DELAY_SECONDS: float = 2.0
 
-# Windows Credential Manager (DPAPI) Service Names
+# Nombres de Servicio en Windows Credential Manager (DPAPI)
 CRED_SERVICE_PORTAL: str = "STN_RPA_TARGET_PORTAL"
-CRED_SERVICE_NOTIFIER: str = "STN_RPA_NOTIFICATION_SERVICE"
+CRED_SERVICE_SIGE: str = "STN_RPA_APP_SIGE"
+CRED_SERVICE_DB: str = "STN_RPA_DATABASE"
+CRED_SERVICE_GRAPH: str = "STN_RPA_GRAPH"
+CRED_SERVICE_OUTLOOK: str = "STN_RPA_OUTLOOK"
 
 # Allowed web domains for strict navigation validation (fail fast on malicious redirects)
 ALLOWED_DOMAINS: list[str] = [

@@ -4,67 +4,76 @@ Este documento define las directrices y restricciones obligatorias que **todo ag
 
 ---
 
-## 1. Regla de Oro: Arquitectura por Capas Inmutable
-Queda estrictamente prohibido improvisar estructuras de carpetas alternativas (como meter todo en scripts sueltos, crear monolitos en `src/`, o dispersar selectores web). Todo bot RPA debe ceñirse a las 7 capas estándar:
-
-1. **`cli/`**: Interfaz de consola (`commands.py`), puntos de entrada y subcomandos (`run`, `auth`, `status`, `clear-memory`).
-2. **`config/`**: Configuración centralizada (`settings.py`), logging rotativo (`logger_config.py`) y seguridad DPAPI (`security.py`).
-3. **`core/`**: Modelos de datos (`models.py`) y base SQLite local para idempotencia y auditoría de ejecuciones (`database.py`).
-4. **`infrastructure/`**: Ciclo de vida del navegador (`browser_manager.py`) y adaptadores de red externos (`notifiers/`).
-5. **`pages/`**: Page Object Model (POM). Cada pantalla o portal web debe aislarse en su propia clase heredando de `BasePage`. **Ningún selector CSS o XPath puede vivir fuera de `pages/`**.
-6. **`services/`**: Orquestación del caso de uso (`bot_service.py`). Coordina insumos, consulta idempotencia en SQLite, comanda acciones web a `pages/`, guarda resultados y dispara alertas.
-7. **`tests/`**: Pruebas unitarias e integración simulada con `pytest`.
+## 1. Cero Sobreingeniería y Simplicidad Radical (KISS / YAGNI)
+* **Preguntar antes de asumir**: Si un requerimiento o flujo no queda 100% claro, es obligatorio preguntar al usuario y **nunca tomar decisiones técnicas en solitario**.
+* **Economía de código**: Si una solución se puede implementar en 3 líneas de código, queda prohibido extenderla a 20. Buscar siempre la sencillez técnica.
+* **Cero fallbacks silenciosos no solicitados**: Prohibido implementar mecanismos de fallback heurísticos, cascadas de consulta o valores inventados que no hayan sido expresamente solicitados por el usuario. Si algo falla o no se encuentra, fallar de forma controlada (*fail-fast*).
 
 ---
 
-## 2. Estrategia Obligatoria de Navegación (Chrome -> Edge -> Fallo Controlado)
-* **Cero descargas pesadas**: Queda prohibido obligar a descargar o congelar binarios portables de Chromium (300+ MB) en entornos donde ya existan navegadores de sistema.
-* **Prioridad 1 (Google Chrome)**: El bot debe intentar instanciar por defecto Google Chrome (`channel="chrome"`).
-* **Prioridad 2 (Microsoft Edge - Fallback)**: Si Chrome no está instalado, el bot debe conmutar automáticamente a Microsoft Edge (`channel="msedge"`).
-* **Fallo Controlado con Notificación**: Si ninguno de los dos navegadores está disponible, el sistema debe disparar la excepción `BrowserNotFoundError`, registrar el error y despachar una notificación de alerta inmediata al operador (*fail-fast*).
+## 2. Responsabilidad Única (SRP) y Modularidad
+* **Una función hace una sola tarea**: Cada función, método y clase debe tener un propósito único y bien delimitado.
+* **Control de tamaño de archivos**: Prohibido crear archivos monolíticos o inmensos.
+* **Alerta de refactorización**: Si para mantener el orden, la legibilidad o desacoplar componentes es necesario refactorizar archivos existentes, se debe alertar y notificar previamente de tal hecho.
 
 ---
 
-## 3. Estándar de Argumentos CLI (`--headless`)
-* **Presencia Obligatoria**: En la consola de comandos (`cli/commands.py`), la acción `run` debe incluir **siempre** el argumento `--headless`.
-* **Comportamiento**:
-  * **Por defecto (`False`)**: La ejecución inicia con la ventana gráfica del navegador **visible** para permitir la supervisión visual del operador.
-  * **Con el flag presente (`True`)**: Si el usuario especifica `--headless`, el bot opera en segundo plano sin interfaz gráfica (modo servidor / scheduled task).
+## 3. Documentación en Español y Código Autoleíble
+* **Idioma de documentación**: Toda la documentación de proyecto (`README.md`, `MEMORY.md`, manuales) y los docstrings del código deben redactarse en **español**.
+* **Comentarios estrictamente necesarios**: El código debe ser limpio y autoleíble. No escribir comentarios obvios que repitan lo que el código hace. Reservar comentarios únicamente para explicar decisiones de negocio complejas o no evidentes.
+* **Nombres de símbolos en inglés técnico**: Nombres de clases, variables, funciones y métodos se redactan en inglés técnico (`process_items`, `BotDatabase`, etc.).
 
 ---
 
-## 4. Control de Versiones, Ramas y GitHub CLI (`gh`)
-* **Protección de `main`**: Queda estrictamente prohibido trabajar o realizar commits directamente sobre `main` o `master`.
-* **Ramas de trabajo desde `main`**: Todo cambio debe desarrollarse en una rama específica creada a partir de la última versión de `main`, usando nombres descriptivos en español con kebab-case:
-  * `caracteristica/nombre-descriptivo` (nuevas funcionalidades)
-  * `mejora/nombre-descriptivo` (optimizaciones)
-  * `correccion/nombre-descriptivo` (corrección de errores)
-  * `refactor/nombre-descriptivo` (refactorizaciones)
-* **Subida y Pull Requests con `gh`**: Todos los cambios deben subirse al repositorio remoto y fusionarse mediante la GitHub CLI (`gh pr create`, `gh pr merge`).
-* **Conventional Commits**: Todo commit debe seguir la especificación oficial v1.0.0 (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`).
+## 4. Calidad de Código y Linters Obligatorios
+* **Ejecución previa a commits**: Antes de confirmar cualquier cambio, es obligatorio ejecutar el linter (`ruff check .`) y la suite de pruebas (`pytest`), ajustando el código a sus estándares.
+* **Criterio de omisión**: Solo se permite omitir advertencias del linter cuando exista una justificación técnica real y explícita, sin convertirse en un bloqueador dogmático.
 
 ---
 
-## 5. Actualización Obligatoria de Documentación (`README.md`)
-* **Regla tras cada `feat`**: Tras implementar cada nueva funcionalidad o cambio de comportamiento, **es obligatorio actualizar el archivo `README.md`** del repositorio antes de dar por concluida la tarea o fusionar el Pull Request.
-* El `README.md` debe ser siempre el reflejo exacto y actualizado de cómo configurar, ejecutar y operar el bot.
+## 5. Directrices de Interfaz de Usuario (UI / Máscara Web)
+* **Stack Vanilla**: De requerirse una interfaz o máscara visual de usuario, se debe utilizar exclusivamente **HTML5, CSS3 y JavaScript Vanilla** nativo (sin frameworks pesados innecesarios).
+* **Prohibición de Emoticones (Emojis)**: Queda terminantemente prohibido usar emoticones o emojis Unicode (🚀, 💾, ⚙️, ❌) en botones, etiquetas, tablas o consola.
+* **Iconografía Profesional**: Utilizar siempre iconos vectoriales profesionales de **Font Awesome Free** (`<i class="fa-solid fa-nombre-icono"></i>`) o Bootstrap Icons.
+* **Estilo Visual Oscuro (Dark Theme)**: La máscara debe tener una estética moderna, limpia y minimalista con paleta oscura inspirada en la interfaz del chat de Gemini (`#131314` de fondo, `#1e1f20` en tarjetas/superficies, bordes `#3c4043` y acentos `#a8c7fa`).
 
 ---
 
-## 6. Seguridad y Credenciales (DPAPI Obligatorio)
-* **Cero contraseñas en código o `.env` planos**: Toda clave o token de portales debe gestionarse mediante Windows Credential Manager (DPAPI) usando `keyring` a través de `config/security.py`.
-* **Sanitización de URLs**: Toda navegación web debe validar protocolo HTTPS y pertenencia a dominios autorizados mediante `validate_url()`.
-* **Protección de Datos Sensibles**: Nunca exponer en logs, pantallas ni reportes de chat contraseñas o tokens. Usar placeholders (`<SECRET>`, `<API_KEY>`).
+## 6. Gestión de Credenciales y Menú Interactivo en `auth`
+* **Menú de Selección**: Al ejecutar `python main.py auth`, debe desplegarse un menú interactivo en consola para elegir qué servicio configurar:
+  1. App Web (Portal objetivo)
+  2. App SIGE (Sistema interno)
+  3. Conexión de Base de Datos
+  4. Microsoft Graph API
+  5. Destinatarios Microsoft Outlook Local
+* **Cero secretos en código o `.env`**: Toda clave se cifra mediante Windows Credential Manager (DPAPI) con `keyring`.
 
 ---
 
-## 7. Idempotencia y Tolerancia a Fallos
-* **Memoria en SQLite (`bot_memory.db`)**: Antes de interactuar con el navegador para un registro o ID, el orquestador **debe** consultar `db.is_already_completed(item_id)`. Si ya fue completado exitosamente, debe omitirse (*SKIPPED*) salvo que se use el flag `--force`.
-* **Registro Inmediato**: Cada resultado (éxito o fallo) se persiste en base de datos inmediatamente tras su intento, garantizando que si el bot se interrumpe, pueda reanudarse exactamente donde quedó.
+## 7. Sistema de Notificaciones Dual (`--notify-graph` y `--notify-outlook`)
+* **Flag `--notify-graph` (Microsoft Graph API)**:
+  * Despacha reportes por correo corporativo en la nube (Azure AD).
+  * Los correos destinatarios se separan exclusivamente por punto y coma (`;`).
+  * **Validación estricta (Fail-Fast)**: Si no se proporcionan correos válidos (vía `--emails` o DPAPI), el bot debe notificar del error y cerrarse inmediatamente sin procesar nada.
+* **Flag `--notify-outlook` (Microsoft Outlook Local)**:
+  * Envía el reporte utilizando la configuración/perfil actual de Outlook del equipo cliente.
+  * **No requiere que Outlook esté abierto**: La automatización se comunica en segundo plano vía COM sin esperar a que el usuario tenga la aplicación visible.
 
 ---
 
-## 8. Calidad de Código y Pruebas
-* **Convención de Nombres**: Clases, métodos y variables en inglés técnico (`SamplePortalPage`, `process_items`).
-* **Type Hints**: Obligatorios en todos los argumentos y retornos de función.
-* **Verificación de Linters**: Ejecutar `ruff check .` y `pytest` confirmando 100% de éxito antes de hacer commit.
+## 8. Estrategia de Navegación y Argumento `--headless`
+* **Navegadores Nativos**: Usar por defecto Google Chrome (`channel="chrome"`). Si no está disponible, conmutar automáticamente a Microsoft Edge (`channel="msedge"`). Si ninguno existe, fallar con `BrowserNotFoundError` y notificar el error.
+* **Flag `--headless` Obligatorio**: Todo comando `run` debe incluir `--headless`. Por defecto corre con ventana visible (`False`); si se invoca el flag, corre en segundo plano (`True`).
+
+---
+
+## 9. Control de Versiones, Ramas e Higiene de Repositorio
+* **Protección de `main`**: Nunca trabajar ni hacer commits directamente sobre `main` o `master`.
+* **Ramas desde `main`**: Crear siempre ramas de trabajo específicas desde `main` en español kebab-case (`caracteristica/...`, `mejora/...`, `correccion/...`, `refactor/...`).
+* **Gestión de PRs con `gh`**: Subir cambios y fusionarlos mediante la GitHub CLI (`gh pr create`, `gh pr merge`).
+* **Higiene estricta de `.gitignore`**: Todo archivo o carpeta que no forme parte del core del repositorio debe estar ignorado en `.gitignore` o almacenado dentro de la carpeta `.trash/` (expresamente ignorada).
+
+---
+
+## 10. Memoria Operativa Continua (`MEMORY.md`)
+* Es obligatorio crear y mantener siempre actualizado el archivo **`MEMORY.md`** en la raíz del repositorio, reflejando el flujo de ejecución, las decisiones de diseño y el estado actual del bot.
