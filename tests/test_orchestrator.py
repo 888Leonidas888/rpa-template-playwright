@@ -43,5 +43,24 @@ def test_orchestrator_raises_when_credentials_missing(temp_db: BotDatabase) -> N
 
     with patch("services.bot_service.get_portal_credentials", return_value=None):
         items = [TaskItem(item_id="NEW-ITEM")]
-        with pytest.raises(ValueError, match="credentials are not configured"):
+        with pytest.raises(ValueError, match="no configuradas"):
             orchestrator.process_items(items)
+
+
+def test_orchestrator_dispatches_notifications(temp_db: BotDatabase) -> None:
+    """Verifica que el orquestador dispare los notificadores registrados."""
+    mock_browser = MagicMock()
+    mock_browser.__enter__.return_value = MagicMock()
+    mock_notifier = MagicMock()
+
+    orchestrator = BotOrchestratorService(
+        db=temp_db,
+        browser_manager=mock_browser,
+        notifiers=[mock_notifier],
+    )
+
+    with patch("services.bot_service.get_portal_credentials", return_value=("usr", "pwd")):
+        items = [TaskItem(item_id="NOTIFY-100")]
+        results = orchestrator.process_items(items)
+        assert len(results) == 1
+        mock_notifier.send_notification.assert_called_once()

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STN RPA Bot - Panel de Control</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-title">
+      <i class="fa-solid fa-robot"></i>
+      <span>Panel de Operacion RPA</span>
+    </div>
+    <div id="connectionStatus" class="badge badge-success">
+      <i class="fa-solid fa-circle-check"></i>
+      <span>Sistema Listo</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2 class="card-title">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Parametros de Ejecucion</span>
+      </h2>
+      <div class="controls-grid">
+        <div class="form-group">
+          <label for="inputItems">Documentos / IDs a procesar (separados por coma):</label>
+          <input type="text" id="inputItems" class="form-input" placeholder="DOC-1001, DOC-1002">
+        </div>
+        <div class="form-group">
+          <label for="inputEmails">Correos para Notificacion (separados por ';'):</label>
+          <input type="text" id="inputEmails" class="form-input" placeholder="operador@stn.com;supervisor@stn.com">
+        </div>
+      </div>
+      <div class="btn-group">
+        <button id="btnRunVisible" class="btn btn-primary">
+          <i class="fa-solid fa-play"></i>
+          <span>Ejecutar Visible</span>
+        </button>
+        <button id="btnRunHeadless" class="btn btn-secondary">
+          <i class="fa-solid fa-ghost"></i>
+          <span>Ejecutar en Segundo Plano</span>
+        </button>
+        <button id="btnConfig" class="btn btn-secondary">
+          <i class="fa-solid fa-key"></i>
+          <span>Gestionar Credenciales</span>
+        </button>
+        <button id="btnClear" class="btn btn-secondary">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Limpiar Memoria</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">
+        <i class="fa-solid fa-table-list"></i>
+        <span>Historial de Procesamiento e Idempotencia</span>
+      </h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Item ID</th>
+            <th>Estado</th>
+            <th>Duracion</th>
+            <th>Detalles</th>
+            <th>Fecha / Hora</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td>DEMO-1001</td>
+            <td><span class="badge badge-success"><i class="fa-solid fa-check"></i> Exitoso</span></td>
+            <td>1.4s</td>
+            <td>Reporte procesado correctamente</td>
+            <td>2026-11-01 23:30</td>
+          </tr>
+          <tr>
+            <td>DEMO-1002</td>
+            <td><span class="badge badge-skip"><i class="fa-solid fa-forward"></i> Omitido</span></td>
+            <td>0.0s</td>
+            <td>Item completado en ejecucion previa</td>
+            <td>2026-11-01 23:31</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

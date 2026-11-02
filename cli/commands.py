@@ -1,193 +1,237 @@
-"""Command Line Interface (CLI) implementation for the RPA Bot."""
+"""Implementacion de la interfaz de linea de comandos (CLI) para el Bot RPA."""
 
 import argparse
-import os
-import subprocess
 import sys
 
 from config.logger_config import get_logger
 from config.security import (
-    clear_portal_credentials,
-    get_notifier_credentials,
+    get_db_credentials,
+    get_graph_credentials,
+    get_outlook_recipients,
     get_portal_credentials,
-    has_notifier_credentials,
+    get_sige_credentials,
+    has_db_credentials,
+    has_graph_credentials,
+    has_outlook_recipients,
     has_portal_credentials,
-    prompt_and_save_notifier_credentials,
-    prompt_and_save_portal_credentials,
+    has_sige_credentials,
+    prompt_credentials_menu,
 )
-from config.settings import BROWSERS_DIR
 from core.database import BotDatabase
 from core.models import TaskItem
 from infrastructure.browser_manager import BrowserManager, BrowserNotFoundError
 from infrastructure.notifiers.base_notifier import BaseNotifier
 from infrastructure.notifiers.graph_notifier import GraphNotifier
-from infrastructure.notifiers.webhook_notifier import WebhookNotifier
+from infrastructure.notifiers.outlook_notifier import OutlookNotifier
 from services.bot_service import BotOrchestratorService
 
 logger = get_logger()
 
 
 def handle_auth(args: argparse.Namespace) -> None:
-    """Manages DPAPI stored credentials."""
-    action = args.auth_action
+    """Gestiona el menu o verificacion de credenciales en Windows DPAPI."""
+    action = args.auth_action or "menu"
 
-    if action == "setup":
-        prompt_and_save_portal_credentials()
-        print("\nDo you want to configure notification credentials? (y/n)")
-        resp = input("> ").strip().lower()
-        if resp in ("y", "yes", "s", "si"):
-            prompt_and_save_notifier_credentials()
+    if action in ("setup", "menu"):
+        prompt_credentials_menu()
 
     elif action == "verify":
         print("======================================================")
-        print("          WINDOWS DPAPI CREDENTIAL STATUS            ")
+        print("          ESTADO DE CREDENCIALES EN WINDOWS (DPAPI)   ")
         print("======================================================")
         if has_portal_credentials():
             creds = get_portal_credentials()
-            user = creds[0] if creds else "Unknown"
-            print(f"[OK] Target Portal: CONFIGURED (User: {user})")
+            user = creds[0] if creds else "Desconocido"
+            print(f"[OK] App Web: CONFIGURADO (Usuario: {user})")
         else:
-            print("[MISSING] Target Portal: NOT CONFIGURED (Run: python main.py auth setup)")
+            print("[PENDIENTE] App Web: NO CONFIGURADO")
 
-        if has_notifier_credentials():
-            data = get_notifier_credentials()
-            prov = data.get("provider", "unknown") if data else "unknown"
-            print(f"[OK] Notification Service: CONFIGURED (Provider: {prov})")
+        if has_sige_credentials():
+            creds = get_sige_credentials()
+            user = creds[0] if creds else "Desconocido"
+            print(f"[OK] App SIGE: CONFIGURADO (Usuario: {user})")
         else:
-            print("[INFO] Notification Service: NOT CONFIGURED (Optional)")
+            print("[INFO] App SIGE: NO CONFIGURADO (Opcional)")
 
-    elif action == "clear":
-        clear_portal_credentials()
-        print("[OK] Target Portal credentials removed from Windows Credential Manager.")
+        if has_db_credentials():
+            db_conf = get_db_credentials() or {}
+            host = db_conf.get("host", "<DB_SERVER>")
+            db_name = db_conf.get("database", "<DB_NAME>")
+            print(f"[OK] Base de Datos: CONFIGURADO (Host: {host}, BD: {db_name})")
+        else:
+            print("[INFO] Base de Datos: NO CONFIGURADO (Opcional)")
 
+        if has_graph_credentials():
+            g_conf = get_graph_credentials() or {}
+            sender = g_conf.get("sender_email", "-")
+            recipients = "; ".join(g_conf.get("recipient_emails", []))
+            print(f"[OK] Microsoft Graph: CONFIGURADO (Remitente: {sender}, Destinatarios: {recipients})")
+        else:
+            print("[INFO] Microsoft Graph: NO CONFIGURADO (Opcional)")
 
-def handle_install_browser() -> None:
-    """Installs Chromium directly into the portable browsers/ directory."""
-    print(f"Installing portable Chromium in: {BROWSERS_DIR}...")
-    env = os.environ.copy()
-    env["PLAYWRIGHT_BROWSERS_PATH"] = str(BROWSERS_DIR)
-
-    cmd = [sys.executable, "-m", "playwright", "install", "chromium"]
-    try:
-        subprocess.run(cmd, env=env, check=True)
-        print("[OK] Portable Chromium installed successfully in browsers/")
-    except Exception as e:
-        print(f"[ERROR] Failed to install portable browser: {e}")
-        sys.exit(1)
+        if has_outlook_recipients():
+            recipients = "; ".join(get_outlook_recipients())
+            print(f"[OK] Microsoft Outlook Local: CONFIGURADO (Destinatarios: {recipients})")
+        else:
+            print("[INFO] Microsoft Outlook Local: NO CONFIGURADO (Opcional)")
 
 
 def handle_status() -> None:
-    """Prints SQLite execution statistics and audit summary."""
+    """Muestra estadisticas y estado de ejecuciones desde la base SQLite."""
     db = BotDatabase()
     stats = db.get_summary_stats()
     print("======================================================")
-    print("          RPA BOT EXECUTION MEMORY STATUS            ")
+    print("          ESTADO DE MEMORIA DEL BOT (SQLITE)          ")
     print("======================================================")
     for status_name, count in stats.items():
         print(f" {status_name:15}: {count}")
 
 
 def handle_run(args: argparse.Namespace) -> None:
-    """Executes the bot processing flow."""
-    # Check for credentials
+    """Ejecuta el flujo automatizado del bot validando credenciales y notificaciones."""
+    # 1. Validacion estricta de credenciales de portal
     if not has_portal_credentials():
-        logger.error("Missing portal credentials. Please run 'python main.py auth setup'.")
-        print("[ERROR] Portal credentials not configured in Windows Credential Manager.")
-        print("Run: python main.py auth setup")
+        logger.error("Credenciales del portal web no configuradas. Ejecute 'python main.py auth'.")
+        print("\n[ERROR] Las credenciales del portal no estan configuradas en Windows Credential Manager.")
+        print("Ejecute: python main.py auth (Opcion 1)")
         sys.exit(1)
 
-    # Resolve notification adapter if requested
-    notifier: BaseNotifier | None = None
-    if args.notify:
-        if not has_notifier_credentials():
-            logger.error("Notification requested via --notify but no notifier credentials configured.")
-            print("[ERROR] Flag --notify requires configured notification credentials.")
-            print("Run: python main.py auth setup")
-            sys.exit(1)
-        conf = get_notifier_credentials() or {}
-        if conf.get("provider") == "graph":
-            notifier = GraphNotifier()
-        elif conf.get("provider") == "webhook":
-            notifier = WebhookNotifier()
+    # 2. Parseo de correos destinatarios si se pasaron por flag
+    cmd_emails: list[str] = []
+    if args.emails:
+        cmd_emails = [e.strip() for e in args.emails.split(";") if e.strip()]
 
-    # Parse input items
+    # 3. Validacion y configuracion de notificaciones
+    notifiers: list[BaseNotifier] = []
+
+    if args.notify_graph:
+        resolved_graph_emails = cmd_emails or (get_graph_credentials() or {}).get("recipient_emails", [])
+        if not resolved_graph_emails:
+            logger.error("El flag --notify-graph requiere destinatarios especificados con ';' mediante --emails o en 'auth'.")
+            print("\n[ERROR] Flag --notify-graph: No se detectaron correos destinatarios.")
+            print("Especifique los correos separados por ';' usando: --emails \"correo1@stn.com;correo2@stn.com\"")
+            print("O configurelos interactivamente ejecutando: python main.py auth (Opcion 4)")
+            sys.exit(1)
+
+        try:
+            notifiers.append(GraphNotifier(recipients=resolved_graph_emails))
+        except Exception as e:
+            logger.error("Error al inicializar Microsoft Graph Notifier: %s", e)
+            print(f"\n[ERROR] No se pudo inicializar Microsoft Graph: {e}")
+            sys.exit(1)
+
+    if args.notify_outlook:
+        resolved_outlook_emails = cmd_emails or get_outlook_recipients()
+        if not resolved_outlook_emails:
+            logger.error("El flag --notify-outlook requiere destinatarios especificados con ';' mediante --emails o en 'auth'.")
+            print("\n[ERROR] Flag --notify-outlook: No se detectaron correos destinatarios.")
+            print("Especifique los correos separados por ';' usando: --emails \"correo1@stn.com;correo2@stn.com\"")
+            print("O configurelos interactivamente ejecutando: python main.py auth (Opcion 5)")
+            sys.exit(1)
+
+        try:
+            notifiers.append(OutlookNotifier(recipients=resolved_outlook_emails))
+        except Exception as e:
+            logger.error("Error al inicializar Outlook Notifier: %s", e)
+            print(f"\n[ERROR] No se pudo inicializar Microsoft Outlook Local: {e}")
+            sys.exit(1)
+
+    # 4. Parseo de elementos de trabajo
     item_ids = [item.strip() for item in args.items.split(",") if item.strip()] if args.items else ["DEMO-1001", "DEMO-1002"]
     task_items = [TaskItem(item_id=item_id) for item_id in item_ids]
 
+    # 5. Iniciar orquestador
     headless = args.headless
     browser_manager = BrowserManager(headless=headless)
-    orchestrator = BotOrchestratorService(browser_manager=browser_manager, notifier=notifier)
+    orchestrator = BotOrchestratorService(browser_manager=browser_manager, notifiers=notifiers)
 
-    logger.info("Starting run for %d items (headless=%s)...", len(task_items), headless)
+    logger.info("Iniciando ejecucion para %d items (headless=%s)...", len(task_items), headless)
     try:
         results = orchestrator.process_items(task_items, force_reprocess=args.force)
     except BrowserNotFoundError as e:
-        logger.error("Browser launch failed: %s", e)
+        logger.error("Fallo el arranque del navegador: %s", e)
         print(f"\n[ERROR] {e}")
-        if notifier:
+        for notifier in notifiers:
             notifier.send_notification(
-                subject="[RPA Bot Error] Browser Launch Failed",
-                body_html=f"<p><strong>Execution Aborted:</strong> {e}</p>",
+                subject="[RPA Bot Error] Fallo al Iniciar Navegador",
+                body_html=f"<p><strong>Ejecucion Abortada:</strong> {e}</p>",
             )
         sys.exit(1)
 
-    # Print summary table to console
-    print("\n================== EXECUTION SUMMARY ==================")
+    # 6. Imprimir resumen en consola
+    print("\n================== RESUMEN DE EJECUCION ==================")
     for r in results:
         status_symbol = "[OK]" if r.status.value in ("SUCCESS", "SKIPPED") else "[ERR]"
-        print(f"{status_symbol} {r.item_id:15} | Status: {r.status.value:8} | Time: {r.duration_seconds:4.1f}s | {r.details or r.error_message}")
-    print("=======================================================\n")
+        print(f"{status_symbol} {r.item_id:15} | Estado: {r.status.value:8} | Tiempo: {r.duration_seconds:4.1f}s | {r.details or r.error_message}")
+    print("==========================================================\n")
 
 
 def main() -> None:
-    """CLI Argument Parser entrypoint."""
+    """Punto de entrada del procesador de argumentos CLI."""
     parser = argparse.ArgumentParser(
         prog="rpa-bot",
-        description="Standard STN RPA Playwright Bot CLI",
+        description="CLI Estandar para Bots RPA con Playwright y Python (STN)",
     )
-    subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
+    subparsers = parser.add_subparsers(dest="command", help="Subcomandos disponibles")
 
     # 1. run command
-    run_parser = subparsers.add_parser("run", help="Execute bot automated workflow")
-    run_parser.add_argument("--items", type=str, help="Comma-separated IDs of items to process")
+    run_parser = subparsers.add_parser("run", help="Ejecutar flujo automatizado del bot")
+    run_parser.add_argument("--items", type=str, help="IDs separados por coma para procesar")
     run_parser.add_argument(
         "--headless",
         action="store_true",
         default=False,
-        help="Run browser in background without visible window (default: visible GUI window)",
+        help="Ejecutar navegador en segundo plano (por defecto: visible)",
     )
-    run_parser.add_argument("--notify", action="store_true", help="Send alert upon completion")
-    run_parser.add_argument("--force", action="store_true", help="Force re-processing of already completed items")
+    run_parser.add_argument(
+        "--notify-graph",
+        action="store_true",
+        default=False,
+        help="Enviar reporte al finalizar mediante Microsoft Graph API",
+    )
+    run_parser.add_argument(
+        "--notify-outlook",
+        action="store_true",
+        default=False,
+        help="Enviar reporte al finalizar mediante Microsoft Outlook local",
+    )
+    run_parser.add_argument(
+        "--emails",
+        type=str,
+        help="Correos destinatarios separados por ';' para las notificaciones",
+    )
+    run_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Forzar reprocesamiento de items ya completados en SQLite",
+    )
 
     # 2. auth command
-    auth_parser = subparsers.add_parser("auth", help="Manage DPAPI credentials")
+    auth_parser = subparsers.add_parser("auth", help="Gestionar credenciales en Windows DPAPI")
     auth_parser.add_argument(
         "auth_action",
-        choices=["setup", "verify", "clear"],
-        help="Action to perform: setup, verify, or clear",
+        nargs="?",
+        choices=["setup", "verify", "menu"],
+        default="menu",
+        help="Accion a ejecutar: menu (por defecto), setup o verify",
     )
 
     # 3. status command
-    subparsers.add_parser("status", help="Show SQLite database execution status")
+    subparsers.add_parser("status", help="Mostrar estadisticas de ejecucion de la base SQLite")
 
-    # 4. install-browser command
-    subparsers.add_parser("install-browser", help="Download portable Chromium for distribution")
-
-    # 5. clear-memory command
-    subparsers.add_parser("clear-memory", help="Clear SQLite audit and memory database")
+    # 4. clear-memory command
+    subparsers.add_parser("clear-memory", help="Limpiar la base de datos de memoria SQLite")
 
     args = parser.parse_args()
 
     if args.command == "auth":
         handle_auth(args)
-    elif args.command == "install-browser":
-        handle_install_browser()
     elif args.command == "status":
         handle_status()
     elif args.command == "clear-memory":
         db = BotDatabase()
         count = db.clear_memory()
-        print(f"[OK] Cleared {count} records from bot memory database.")
+        print(f"[OK] Se eliminaron {count} registros de la memoria del bot.")
     elif args.command == "run":
         handle_run(args)
     else:
