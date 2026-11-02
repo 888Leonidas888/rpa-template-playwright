@@ -25,8 +25,9 @@ Este documento define las directrices y restricciones obligatorias que **todo ag
 
 ---
 
-## 4. Calidad de Código y Linters Obligatorios
+## 4. Calidad de Código, Linters y Salida de Consola con Rich
 * **Ejecución previa a commits**: Antes de confirmar cualquier cambio, es obligatorio ejecutar el linter (`ruff check .`) y la suite de pruebas (`pytest`), ajustando el código a sus estándares.
+* **Librería Rich Obligatoria**: Todas las tablas de resumen, paneles de alerta y estados de ejecución en terminal deben construirse con **`rich`** (`Console`, `Table`, `Panel`), manteniendo formato sobrio y profesional sin emoticones.
 * **Criterio de omisión**: Solo se permite omitir advertencias del linter cuando exista una justificación técnica real y explícita, sin convertirse en un bloqueador dogmático.
 
 ---
@@ -47,6 +48,8 @@ Este documento define las directrices y restricciones obligatorias que **todo ag
   4. Microsoft Graph API
   5. Destinatarios Microsoft Outlook Local
 * **Cero secretos en código o `.env`**: Toda clave se cifra mediante Windows Credential Manager (DPAPI) con `keyring`.
+* **Ocultamiento de Infraestructura**: En respuestas de consola (`auth verify`) y reportes, queda prohibido exponer nombres reales de servidores internos o bases de datos; mostrar únicamente si el componente está configurado.
+* **Contexto de Sesión Windows**: Dado que DPAPI cifra con el perfil del usuario activo, para tareas programadas desatendidas (Windows Task Scheduler), la configuración con `auth` debe realizarse bajo la misma cuenta de servicio que ejecutará el proceso.
 
 ---
 
@@ -63,7 +66,7 @@ Este documento define las directrices y restricciones obligatorias que **todo ag
 
 ## 8. Estrategia de Navegación y Argumento `--headless`
 * **Navegadores Nativos**: Usar por defecto Google Chrome (`channel="chrome"`). Si no está disponible, conmutar automáticamente a Microsoft Edge (`channel="msedge"`). Si ninguno existe, fallar con `BrowserNotFoundError` y notificar el error.
-* **Flag `--headless` Obligatorio**: Todo comando `run` debe incluir `--headless`. Por defecto corre con ventana visible (`False`); si se invoca el flag, corre en segundo plano (`True`).
+* **Flag `--headless` Obligatorio**: Todo comando `run` debe incluir `--headless`. Por defecto corre con ventana visible (`False`); si se invoca el flag, corre en segundo plano (`True`). En servidores o tareas programadas desatendidas, es obligatorio incluir `--headless`.
 
 ---
 

@@ -1,4 +1,4 @@
-"""SQLite database manager for execution history, state tracking, and idempotency."""
+"""Repositorio SQLite para persistencia del historial, trazabilidad e idempotencia."""
 
 import sqlite3
 from pathlib import Path
@@ -9,20 +9,22 @@ from core.models import ExecutionResult, ExecutionStatus
 
 
 class BotDatabase:
-    """Manages the local SQLite database for auditing, state memory, and idempotency."""
+    """Manejador de la base de datos local SQLite para auditoria, memoria e idempotencia."""
 
     def __init__(self, db_path: Path = DB_PATH) -> None:
         self.db_path = db_path
         self._init_db()
 
     def _get_connection(self) -> sqlite3.Connection:
-        """Opens and returns a SQLite connection with dictionary row access."""
-        conn = sqlite3.connect(str(self.db_path))
+        """Abre y retorna una conexion SQLite configurada con WAL mode y timeout para alta concurrencia."""
+        conn = sqlite3.connect(str(self.db_path), timeout=30.0)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA busy_timeout=30000;")
         return conn
 
     def _init_db(self) -> None:
-        """Initializes tables and indexes if they do not exist."""
+        """Inicializa tablas e indices en la base de datos si no existen."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -47,10 +49,10 @@ class BotDatabase:
             conn.commit()
 
     def save_record(self, result: ExecutionResult) -> None:
-        """Inserts or updates an execution record in the database.
+        """Inserta o actualiza el registro de ejecucion de un item en la base de datos.
 
         Args:
-            result: The ExecutionResult object containing item status and details.
+            result: Objeto ExecutionResult con el estado y metricas del item.
         """
         output_files_str = ";".join(str(p) for p in result.output_files) if result.output_files else None
         timestamp = result.processed_at.isoformat()
@@ -77,13 +79,13 @@ class BotDatabase:
             conn.commit()
 
     def get_record(self, item_id: str) -> dict[str, Any] | None:
-        """Retrieves an execution record by item identifier.
+        """Recupera el registro de un item por su identificador unico.
 
         Args:
-            item_id: Unique identifier of the item.
+            item_id: Identificador unico del documento o item.
 
         Returns:
-            Optional[dict[str, Any]]: Record dictionary if found, None otherwise.
+            dict[str, Any] | None: Registro encontrado o None si no existe.
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -95,19 +97,18 @@ class BotDatabase:
             return dict(row) if row else None
 
     def is_already_completed(self, item_id: str) -> bool:
-        """Determines if an item has already been successfully processed or marked invalid.
+        """Determina si un item ya fue completado exitosamente o clasificado como omitido/invalido.
 
         Args:
-            item_id: Item identifier to check.
+            item_id: Identificador del item.
 
         Returns:
-            bool: True if already completed, False if it needs processing.
+            bool: True si ya esta completado (no reprocesar), False en caso contrario.
         """
         record = self.get_record(item_id)
         if not record:
             return False
         status = record.get("status")
-        # Idempotency rule: do not reprocess if already successful, skipped, or invalid
         return status in (
             ExecutionStatus.SUCCESS.value,
             ExecutionStatus.SKIPPED.value,
@@ -115,17 +116,17 @@ class BotDatabase:
         )
 
     def get_all_records(self) -> list[dict[str, Any]]:
-        """Returns all recorded task executions ordered by timestamp descending."""
+        """Retorna todos los registros de tareas ordenados por fecha descendente."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM task_records ORDER BY processed_at DESC")
             return [dict(row) for row in cursor.fetchall()]
 
     def get_summary_stats(self) -> dict[str, int]:
-        """Calculates count breakdown by execution status.
+        """Calcula el conteo de ejecuciones desglosado por estado.
 
         Returns:
-            dict[str, int]: Mapping of status names to record counts.
+            dict[str, int]: Diccionario con conteo por estado y TOTAL.
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -136,10 +137,10 @@ class BotDatabase:
             return stats
 
     def clear_memory(self) -> int:
-        """Deletes all task execution history from the database.
+        """Elimina todos los registros del historial de la base de datos.
 
         Returns:
-            int: Number of deleted records.
+            int: Cantidad de registros eliminados.
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
