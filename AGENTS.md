@@ -18,16 +18,18 @@ Al trabajar en este proyecto o en cualquier bot derivado de él, debes seguir es
 3. **Documentación en Español y Código Autoleíble**:
    - Documentación (`README.md`, `MEMORY.md`) y docstrings en español.
    - Comentarios estrictamente necesarios; el código debe ser autoleíble por sí mismo.
-4. **Linters Obligatorios**:
+4. **Linters y Formato con Rich**:
    - Ejecutar `ruff check .` y `pytest` antes de confirmar cualquier cambio.
+   - Todas las tablas, paneles y salidas CLI deben utilizar la librería `rich` (sin emoticones).
 5. **Máscara Web (UI)**:
    - De requerirse interfaz, usar únicamente **HTML5, CSS y JavaScript Vanilla**.
 6. **Cero Emoticones (Iconos Profesionales)**:
    - Prohibido emojis en UI o consola; usar exclusivamente **Font Awesome** o Bootstrap Icons.
 7. **Estilo Dark Theme**:
    - Colores oscuros estilo Gemini (`#131314` fondo, `#1e1f20` tarjetas, `#a8c7fa` acentos).
-8. **Menú de Credenciales en `auth`**:
+8. **Menú de Credenciales en `auth` y Ocultamiento de Datos**:
    - Menú interactivo para configurar App Web, App SIGE, Base de Datos, Microsoft Graph (correos con `;`) y Outlook local en Windows DPAPI.
+   - Ocultar nombres de infraestructura interna en consola. Configurar bajo la cuenta que ejecutará la tarea programada.
 9. **Notificaciones Duales y Validación Estricta**:
    - `--notify-graph`: Envia por Graph API; requiere correos separados por `;` (cierre inmediato con error si faltan).
    - `--notify-outlook`: Envia por Outlook local en segundo plano (sin esperar que Outlook esté abierto).

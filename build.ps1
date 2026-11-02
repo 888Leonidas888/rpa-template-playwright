@@ -25,6 +25,7 @@ pyinstaller --noconfirm --onedir --console `
     --hidden-import "playwright.sync_api" `
     --hidden-import "sqlite3" `
     --hidden-import "requests" `
+    --hidden-import "rich" `
     main.py
 
 # 3. Copiar navegador congelado Chromium portable (opcional, por defecto usa Chrome/Edge del sistema)
