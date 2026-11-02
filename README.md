@@ -149,3 +149,19 @@ El binario resultante se ubicará en `dist/rpa-bot/`:
 * `dist/rpa-bot/logs/`: Directorio para trazabilidad.
 
 Este paquete no requiere paquetes pesados de navegador porque se conecta directamente al Chrome o Edge del equipo cliente.
+
+---
+
+## 7. Reglas de Desarrollo y Contribución (Para el Equipo y Agentes de IA)
+
+Cualquier cambio o extensión a este proyecto (o a cualquier bot creado a partir de esta plantilla) debe cumplir estrictamente las reglas definidas en [AGENTS.md](AGENTS.md) y [.agents/rules/rpa_standard.md](.agents/rules/rpa_standard.md):
+
+1. **Navegadores Nativos Obligatorios**: Chrome por defecto (`channel="chrome"`), fallback automático a Edge (`channel="msedge"`). Si no hay ninguno, fallo controlado inmediato (`BrowserNotFoundError`) y notificación al operador. Prohibido empaquetar o forzar descargas de Chromium portable.
+2. **Flag `--headless` Obligatorio**: Todo comando `run` en CLI debe soportar `--headless`. Por defecto ejecuta con interfaz visible (`headless=False`); si se incluye el flag, ejecuta en segundo plano (`headless=True`).
+3. **Flujo de Trabajo Git con `gh`**:
+   - Nunca trabajar ni hacer commits directamente sobre `main`.
+   - Crear siempre ramas de trabajo desde `main` (`caracteristica/...`, `mejora/...`, `correccion/...`, `refactor/...`).
+   - Usar Conventional Commits (`feat:`, `fix:`, etc.).
+   - Gestionar y fusionar Pull Requests utilizando la GitHub CLI (`gh`).
+4. **Actualización Obligatoria de `README.md`**: Tras cada nueva funcionalidad o cambio arquitectónico, es obligatorio actualizar este `README.md` antes de fusionar el Pull Request.
+5. **Seguridad DPAPI**: Credenciales almacenadas únicamente en Windows Credential Manager (`keyring`). Prohibido credenciales planas o `.env` en Git.
