@@ -1,4 +1,4 @@
-# build.ps1 - Automated PyInstaller compilation script for STN RPA Bots
+# build.ps1 - Automated PyInstaller compilation script for RPA Bots
 $ErrorActionPreference = "Stop"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
@@ -28,13 +28,8 @@ pyinstaller --noconfirm --onedir --console `
     --hidden-import "rich" `
     main.py
 
-# 3. Copiar navegador congelado Chromium portable (opcional, por defecto usa Chrome/Edge del sistema)
-if (Test-Path "browsers") {
-    Write-Host "Paso 2: Copiando navegador portable a $DistPath\browsers..." -ForegroundColor Yellow
-    Copy-Item -Path "browsers" -Destination "$DistPath\browsers" -Recurse -Force
-} else {
-    Write-Host "Paso 2: Operacion con navegadores nativos del sistema (Google Chrome / Microsoft Edge)." -ForegroundColor Yellow
-}
+# 3. Informar sobre operacion con navegadores nativos locales
+Write-Host "Paso 2: Operacion configurada con navegadores nativos del sistema (Google Chrome / Microsoft Edge)." -ForegroundColor Yellow
 
 # 4. Crear estructura de carpetas operativas junto al binario
 Write-Host "Paso 3: Creando carpetas de operacion en distribucion..." -ForegroundColor Yellow

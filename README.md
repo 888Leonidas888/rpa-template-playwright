@@ -1,8 +1,6 @@
-# STN RPA Playwright Bot Template (Arquitectura Estándar)
+# RPA Playwright Bot Template (Arquitectura Estándar)
 
-Plantilla corporativa y marco de trabajo estandarizado para la creación de Bots de Automatización de Procesos (RPA) y Web Scraping utilizando **Python**, **Playwright**, **Google Chrome / Microsoft Edge**, **Windows Credential Manager (DPAPI)**, persistencia **SQLite**, notificaciones (**Microsoft Graph / Outlook**) y empaquetado autónomo con **PyInstaller**.
-
-Repositorio oficial: [888Leonidas888/rpa-template-playwright](https://github.com/888Leonidas888/rpa-template-playwright.git)
+Plantilla corporativa y marco de trabajo estandarizado para la creación de Bots de Automatización de Procesos (RPA) y Web Scraping utilizando **Python**, **Playwright**, **Google Chrome / Microsoft Edge**, **Windows Credential Manager (DPAPI)**, persistencia opcional **SQLite**, notificaciones (**Microsoft Graph / Outlook**) y empaquetado autónomo con **PyInstaller**.
 
 ---
 
@@ -14,7 +12,7 @@ El proyecto sigue una arquitectura en capas limpia, desacoplada y orientada a la
 rpa-playwright-template/
 ├── .agents/                      # Reglas y Skills locales para asistentes de IA (Antigravity / Claude / Copilot)
 │   ├── rules/rpa_standard.md     # Las 10 Reglas obligatorias de arquitectura, seguridad y cero improvisacion
-│   └── skills/rpa-scaffold/      # Guia procedimental para crear paginas POM, orquestacion y compilacion
+│   └── skills/rpa-scaffold/      # Guia procedimental para crear paginas POM, orquestacion y empaquetado
 ├── AGENTS.md                     # Directrices principales de entrada para asistentes de codigo
 ├── MEMORY.md                     # Memoria operativa continua del bot (flujo, decisiones y estados)
 ├── cli/                          # Interfaz de linea de comandos (Argparse)
@@ -23,12 +21,12 @@ rpa-playwright-template/
 ├── config/                       # Configuracion y utilidades del sistema
 │   ├── __init__.py
 │   ├── settings.py               # Rutas de ejecucion, timeouts y dominios autorizados
-│   ├── security.py               # Menu interactivo y gestion DPAPI (Web, SIGE, BBDD, Graph, Outlook)
+│   ├── security.py               # Menu interactivo y gestion DPAPI (Web, Interna, BBDD, Graph, Outlook)
 │   └── logger_config.py          # Logging rotativo (consola y archivo logs/bot.log)
 ├── core/                         # Capa de dominio y persistencia
 │   ├── __init__.py
 │   ├── models.py                 # DTOs: TaskItem, ExecutionResult, ExecutionStatus
-│   └── database.py               # Base SQLite local para auditoria e idempotencia (bot_memory.db)
+│   └── database.py               # Base SQLite local para auditoria e idempotencia opcional (bot_memory.db)
 ├── infrastructure/               # Adaptadores externos y drivers del sistema operativo
 │   ├── __init__.py
 │   ├── browser_manager.py        # Gestor de Playwright: Chrome (primario) -> Edge (fallback) -> Error
@@ -46,8 +44,9 @@ rpa-playwright-template/
 ├── tests/                        # Suite de pruebas automatizadas (pytest)
 │   ├── test_browser_manager.py   # Pruebas de estrategia de navegadores Chrome/Edge
 │   ├── test_database.py          # Pruebas de base de datos e idempotencia
-│   ├── test_security.py          # Pruebas de validacion HTTPS y DPAPI (Web, SIGE, BBDD, Graph, Outlook)
-│   └── test_orchestrator.py      # Pruebas del orquestador de negocio simulado
+│   ├── test_security.py          # Pruebas de validacion HTTPS y DPAPI (Web, Interna, BBDD, Graph, Outlook)
+│   ├── test_orchestrator.py      # Pruebas del orquestador de negocio simulado
+│   └── test_cli.py               # Pruebas de interfaz CLI y Rich
 ├── ui/                           # Mascara web para usuario (HTML5, CSS3 y JS Vanilla oscuro con Font Awesome)
 │   ├── index.html
 │   ├── style.css
@@ -62,11 +61,12 @@ rpa-playwright-template/
 
 ---
 
-## 2. Estrategia de Navegadores (Cero Descargas Pesadas)
+## 2. Estrategia de Navegadores (Navegadores Nativos del Sistema)
 
 1. **Google Chrome (Canal Primario)**: Se intenta instanciar `channel="chrome"`.
 2. **Microsoft Edge (Fallback Automático)**: Si Chrome no está presente, conmuta automáticamente a `channel="msedge"` (preinstalado en Windows 10/11).
 3. **Fallo Controlado**: Si ninguno de los dos navegadores está disponible, se dispara la excepción `BrowserNotFoundError`, se registra en el log y se despacha una notificación de alerta inmediata al operador (*fail-fast*).
+4. **Cero Navegadores Portables**: No se requiere descargar ni empaquetar navegadores Chromium externos.
 
 ---
 
@@ -90,7 +90,7 @@ python main.py auth
 ```
 Opciones disponibles en el menú:
 1. Credenciales App Web (Portal objetivo)
-2. Credenciales App SIGE (Sistema interno)
+2. Credenciales App Interna / ERP (Sistema interno)
 3. Conexión de Base de Datos
 4. Microsoft Graph API (con correos separados por `;`)
 5. Destinatarios Microsoft Outlook Local
@@ -109,11 +109,14 @@ python main.py run --items "PO-1001,PO-1002"
 # Ejecución en segundo plano (Headless)
 python main.py run --items "PO-1001,PO-1002" --headless
 
+# Ejecución sin persistencia en base de datos SQLite (opcional)
+python main.py run --items "PO-1001" --no-db
+
 # Ejecución con notificación por Microsoft Graph (valida correos con ';')
-python main.py run --items "PO-1001" --headless --notify-graph --emails "operador@stn.com;supervisor@stn.com"
+python main.py run --items "PO-1001" --headless --notify-graph --emails "operador@empresa.com;supervisor@empresa.com"
 
 # Ejecución con notificación por Microsoft Outlook local (en segundo plano, sin requerir Outlook abierto)
-python main.py run --items "PO-1001" --headless --notify-outlook --emails "operador@stn.com;supervisor@stn.com"
+python main.py run --items "PO-1001" --headless --notify-outlook --emails "operador@empresa.com;supervisor@empresa.com"
 
 # Forzar reprocesamiento (ignorando registros previos en SQLite)
 python main.py run --items "PO-1001" --force
@@ -126,7 +129,7 @@ python main.py run --items "PO-1001" --force
 Para crear un nuevo proyecto sin copiar archivos manualmente ni arrastrar historiales viejos:
 
 ```powershell
-.\new-bot.ps1 -Name "bot-sunat-detracciones" -Destination "C:\Users\jescriba\Desktop\development\bot-sunat-detracciones"
+.\new-bot.ps1 -Name "bot-portal-facturas" -Destination "C:\proyectos\bot-portal-facturas"
 ```
 
 El script se encargará de:
@@ -170,18 +173,19 @@ El binario resultante se ubicará en `dist/rpa-bot/`:
 
 Cualquier cambio o extensión a este proyecto (o a cualquier bot creado a partir de esta plantilla) debe cumplir estrictamente las reglas definidas en [AGENTS.md](AGENTS.md) y [.agents/rules/rpa_standard.md](.agents/rules/rpa_standard.md):
 
-1. **Cero Sobreingeniería (KISS / YAGNI)**: Si algo no queda claro, preguntar antes de asumir. Si una solución toma 3 líneas, no hacerla en 20. Cero fallbacks silenciosos no pedidos.
+1. **Cero Sobreingeniería y DRY**: Si algo no queda claro, preguntar antes de asumir. Verificar previamente si lo solicitado ya existe para reutilizar código. Si una solución toma 3 líneas, no hacerla en 20.
 2. **Responsabilidad Única (SRP)**: Una función hace una tarea. No crear archivos inmensos. Alertar al usuario si se requiere refactorizar.
-3. **Documentación en Español**: Documentación y docstrings en español. Comentarios estrictamente necesarios; el código debe ser autoleíble.
-4. **Linters Obligatorios**: Ejecutar `ruff check .` y `pytest` antes de confirmar cambios.
+3. **Documentación en Español**: Documentación y docstrings en español (términos técnicos estándar en inglés).
+4. **Linters Obligatorios**: Ejecutar `ruff check .` y `pytest` antes de confirmar cambios. Formato sobrio de terminal con `rich` sin emoticones.
 5. **Máscara Web (UI)**: Si se requiere interfaz, usar **HTML5, CSS y JavaScript Vanilla**.
 6. **Cero Emoticones (Iconografía Profesional)**: Prohibido emojis en UI o consola; usar exclusivamente **Font Awesome** o Bootstrap Icons.
 7. **Estilo Dark Theme**: Colores oscuros minimalistas inspirados en la interfaz de Gemini (`#131314` fondo, `#1e1f20` tarjetas, `#a8c7fa` acentos).
-8. **Menú de Credenciales en `auth`**: Menú interactivo para configurar App Web, App SIGE, BBDD, Graph (con correos separados por `;`) y Outlook local en Windows DPAPI.
-9. **Notificaciones Duales**:
-   * `--notify-graph`: Envia por Graph API; requiere correos separados por `;` (cierre inmediato con error si faltan).
-   * `--notify-outlook`: Envia por Outlook local en segundo plano (sin esperar que Outlook esté abierto).
+8. **Menú de Credenciales en `auth`**: Menú interactivo para configurar App Web, App Interna / ERP, BBDD, Graph (con correos separados por `;`) y Outlook local en Windows DPAPI.
+9. **Navegadores Nativos, Notificaciones Duales y Persistencia Opcional**:
+   * Google Chrome o Microsoft Edge locales.
+   * `--notify-graph` (Graph API) y `--notify-outlook` (Outlook local en segundo plano).
+   * Persistencia SQLite opcional (`--no-db`).
 10. **Higiene de Repositorio y `MEMORY.md`**:
     * Ignorar todo archivo no-core en `.gitignore` o moverlo a la carpeta `.trash/` (ignorada).
-    * Mantener siempre actualizado `MEMORY.md` y `README.md` tras cada `feat`.
+    * Mantener siempre actualizado `MEMORY.md` y `README.md` tras cada cambio.
     * Nunca trabajar sobre `main`; usar ramas kebab-case desde `main` y gestionar cambios con `gh`.

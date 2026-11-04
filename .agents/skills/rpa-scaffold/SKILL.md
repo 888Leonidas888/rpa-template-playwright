@@ -1,16 +1,23 @@
 ---
 name: rpa-scaffold
 description: >-
-  Guía operativa y procedimental para extender, crear páginas POM, orquestar flujos y empaquetar bots RPA bajo la arquitectura estándar de STN (Playwright + Python + DPAPI + PyInstaller).
+  Guía operativa y procedimental para extender, crear páginas POM, orquestar flujos y empaquetar bots RPA bajo la arquitectura estándar desacoplada (Playwright + Python + DPAPI + PyInstaller).
 ---
 
 # Skill: Desarrollo y Extensión de Bots RPA Estandarizados
 
-Esta Skill describe el flujo paso a paso para desarrollar nuevas funcionalidades o crear nuevos bots basados en esta plantilla, asegurando consistencia arquitectónica.
+Esta Skill describe el flujo paso a paso para desarrollar nuevas funcionalidades o crear nuevos bots basados en esta plantilla, asegurando consistencia arquitectónica y modularidad.
 
 ---
 
-## 1. Flujo de Trabajo para Agregar una Nueva Automatización
+## 1. Verificación Previa (DRY - Don't Repeat Yourself)
+Antes de crear nuevas utilidades o funciones:
+1. Inspeccionar `pages/base_page.py` para reutilizar métodos seguros de interacción (`safe_click`, `safe_fill`, `wait_for_element`, etc.).
+2. Inspeccionar `core/database.py`, `config/security.py` e `infrastructure/browser_manager.py` para evitar duplicar lógica existente.
+
+---
+
+## 2. Flujo de Trabajo para Agregar una Nueva Automatización
 
 ### Paso 1: Definir los Selectores y Acciones Web en `pages/`
 Cree un nuevo archivo `pages/<portal_name>_page.py` heredando de `BasePage`:
@@ -39,17 +46,17 @@ Si los datos de entrada o salida tienen campos específicos, defina un DTO claro
 
 ### Paso 3: Orquestar en `services/`
 Incorpore la lógica de negocio en `services/bot_service.py`:
-1. Comprobar si el registro ya está completado en `self.db.is_already_completed(item.item_id)`.
+1. Comprobar si el registro ya está completado en `self.db.is_already_completed(item.item_id)` (solo si la persistencia está habilitada; es opcional).
 2. Invocar los métodos del Page Object correspondiente.
 3. Capturar archivos descargados con `self.capture_download(...)`.
-4. Registrar el resultado inmediatamente en `self.db.save_record(result)`.
+4. Registrar el resultado inmediatamente si la base de datos está activa (`if self.db: self.db.save_record(result)`).
 
 ### Paso 4: Exponer Parámetros en `cli/commands.py`
-Añada los flags o argumentos necesarios al parser de `run` (ej. `--fecha-inicio`, `--tipo-documento`).
+Añada los flags o argumentos necesarios al parser de `run` (ej. `--excel`, `--fecha-inicio`, `--tipo-documento`).
 
 ---
 
-## 2. Gestión de Credenciales en Producción
+## 3. Gestión de Credenciales en Producción
 Para configurar credenciales de forma interactiva en Windows Credential Manager:
 ```powershell
 python main.py auth setup
@@ -61,22 +68,23 @@ python main.py auth verify
 
 ---
 
-## 3. Preparación del Navegador Portable y Empaquetado
+## 4. Ejecución, Calidad y Empaquetado
 
-1. **Descargar Chromium portable**:
-   ```powershell
-   python main.py install-browser
-   ```
+1. **Navegador del Sistema**:
+   El bot utiliza de forma nativa Google Chrome o Microsoft Edge instalados en el sistema operativo. No se requiere descargar ni distribuir un navegador empaquetado.
+
 2. **Ejecutar Pruebas Automatizadas**:
    ```powershell
    pytest
    ```
+
 3. **Verificar Calidad de Código**:
    ```powershell
    ruff check .
    ```
+
 4. **Compilar a Ejecutable (.exe)**:
    ```powershell
    .\build.ps1
    ```
-   El binario independiente quedará generado en `dist/rpa-bot/` junto a su navegador Chromium congelado y sus carpetas operativas (`downloads/`, `logs/`).
+   El binario independiente quedará generado en `dist/rpa-bot/` listo para distribución.

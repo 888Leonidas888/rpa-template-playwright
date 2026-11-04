@@ -1,4 +1,4 @@
-"""Tests for BrowserManager Chrome and Edge fallback strategy."""
+"""Pruebas para la estrategia de inicio con Google Chrome y Microsoft Edge en BrowserManager."""
 
 from unittest.mock import MagicMock, patch
 
@@ -8,7 +8,7 @@ from infrastructure.browser_manager import BrowserManager, BrowserNotFoundError
 
 
 def test_browser_manager_launches_chrome_first() -> None:
-    """Verifies that BrowserManager attempts Chrome first."""
+    """Verifica que BrowserManager intente primero iniciar Google Chrome."""
     mock_playwright = MagicMock()
     mock_context = MagicMock()
     mock_page = MagicMock()
@@ -24,18 +24,18 @@ def test_browser_manager_launches_chrome_first() -> None:
         assert page == mock_page
         assert bm.active_channel == "chrome"
         mock_playwright.chromium.launch_persistent_context.assert_called_once()
-        args, kwargs = mock_playwright.chromium.launch_persistent_context.call_args
+        _args, kwargs = mock_playwright.chromium.launch_persistent_context.call_args
         assert kwargs["channel"] == "chrome"
 
 
 def test_browser_manager_falls_back_to_edge_when_chrome_fails() -> None:
-    """Verifies that BrowserManager falls back to Microsoft Edge if Chrome fails."""
+    """Verifica que BrowserManager conmute a Microsoft Edge si falla Chrome."""
     mock_playwright = MagicMock()
     mock_context = MagicMock()
     mock_page = MagicMock()
     mock_context.pages = [mock_page]
 
-    # First call (chrome) raises Exception, second call (msedge) succeeds
+    # Primera llamada (chrome) falla, segunda llamada (msedge) tiene exito
     mock_playwright.chromium.launch_persistent_context.side_effect = [
         Exception("Chrome executable not found"),
         mock_context,
@@ -53,7 +53,7 @@ def test_browser_manager_falls_back_to_edge_when_chrome_fails() -> None:
 
 
 def test_browser_manager_raises_error_when_neither_browser_found() -> None:
-    """Verifies that BrowserManager raises BrowserNotFoundError if both Chrome and Edge fail."""
+    """Verifica que BrowserManager dispare BrowserNotFoundError si fallan ambos navegadores."""
     mock_playwright = MagicMock()
     mock_playwright.chromium.launch_persistent_context.side_effect = Exception("Browser not found")
 
@@ -61,5 +61,5 @@ def test_browser_manager_raises_error_when_neither_browser_found() -> None:
         mock_sync.return_value.start.return_value = mock_playwright
 
         bm = BrowserManager(headless=True)
-        with pytest.raises(BrowserNotFoundError, match="Neither Google Chrome nor Microsoft Edge"):
+        with pytest.raises(BrowserNotFoundError, match="No se pudo iniciar ni Google Chrome"):
             bm.start()

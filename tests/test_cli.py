@@ -20,18 +20,18 @@ def test_resolve_notifiers_fails_when_graph_emails_missing() -> None:
 
 def test_resolve_notifiers_success_with_command_emails() -> None:
     """Verifica que los correos pasados por argumento --emails resuelvan correctamente."""
-    args = argparse.Namespace(notify_graph=True, notify_outlook=False, emails="a@stn.com;b@stn.com")
+    args = argparse.Namespace(notify_graph=True, notify_outlook=False, emails="a@empresa.com;b@empresa.com")
 
     fake_config = {
         "tenant_id": "tenant-123",
         "client_id": "client-123",
         "client_secret": "secret-123",
-        "sender_email": "bot@stn.com",
+        "sender_email": "bot@empresa.com",
     }
     with patch("cli.commands.get_graph_credentials", return_value=fake_config), patch(
         "infrastructure.notifiers.graph_notifier.get_graph_credentials", return_value=fake_config
     ):
-        notifiers = _resolve_notifiers(args, ["a@stn.com", "b@stn.com"])
+        notifiers = _resolve_notifiers(args, ["a@empresa.com", "b@empresa.com"])
         assert len(notifiers) == 1
 
 

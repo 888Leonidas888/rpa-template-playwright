@@ -1,4 +1,4 @@
-"""Domain models and execution status definitions for RPA tasks."""
+"""Modelos de dominio y definiciones de estado de ejecucion para tareas RPA."""
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -8,7 +8,7 @@ from typing import Any
 
 
 class ExecutionStatus(str, Enum):
-    """Execution status for an RPA task or item."""
+    """Estado de ejecucion para una tarea o elemento de trabajo RPA."""
 
     PENDING = "PENDING"
     SUCCESS = "SUCCESS"
@@ -19,13 +19,13 @@ class ExecutionStatus(str, Enum):
 
 @dataclass
 class TaskItem:
-    """Represents an input work item to be processed by the bot.
+    """Representa un elemento de trabajo de entrada para ser procesado por el bot.
 
-    Attributes:
-        item_id: Unique identifier for the item (e.g. invoice number, PO number, code).
-        item_type: Category or label (e.g. 'invoice', 'report', 'query').
-        payload: Additional metadata or context required for processing.
-        created_at: Creation timestamp.
+    Atributos:
+        item_id: Identificador unico del elemento (ej. numero de factura, orden de compra PO, codigo).
+        item_type: Categoria o etiqueta (ej. 'invoice', 'report', 'query').
+        payload: Metadatos o contexto adicional requerido para el procesamiento.
+        created_at: Marca de tiempo de creacion (timestamp).
     """
 
     item_id: str
@@ -36,17 +36,17 @@ class TaskItem:
 
 @dataclass
 class ExecutionResult:
-    """Outcome of processing a single TaskItem.
+    """Resultado del procesamiento de un unico TaskItem.
 
-    Attributes:
-        item_id: Identifier of the processed work item.
-        status: Final status of the processing.
-        output_files: Paths to downloaded or generated files.
-        details: Optional human-readable message or summary.
-        error_message: Error description if status is FAILED.
-        attempts: Number of retry attempts made.
-        duration_seconds: Elapsed execution time in seconds.
-        processed_at: Completion timestamp.
+    Atributos:
+        item_id: Identificador del elemento procesado.
+        status: Estado final del procesamiento.
+        output_files: Rutas de archivos descargados o generados.
+        details: Mensaje informativo o resumen de la ejecucion.
+        error_message: Descripcion del error si el estado es FAILED.
+        attempts: Numero de intentos realizados.
+        duration_seconds: Tiempo transcurrido de ejecucion en segundos.
+        processed_at: Marca de tiempo de finalizacion (timestamp).
     """
 
     item_id: str

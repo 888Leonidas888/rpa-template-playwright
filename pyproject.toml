@@ -1,7 +1,7 @@
 [project]
 name = "rpa-playwright-template"
 version = "0.1.0"
-description = "STN Standard RPA Playwright Bot Template"
+description = "Standard RPA Playwright Bot Template"
 requires-python = ">=3.10"
 
 [tool.ruff]

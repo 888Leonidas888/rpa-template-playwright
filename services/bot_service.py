@@ -17,16 +17,25 @@ logger = get_logger()
 
 
 class BotOrchestratorService:
-    """Coordina el procesamiento por lotes con idempotencia, persistencia y notificaciones."""
+    """Coordina el procesamiento por lotes con persistencia opcional, idempotencia y notificaciones."""
 
     def __init__(
         self,
         db: BotDatabase | None = None,
         browser_manager: BrowserManager | None = None,
         notifiers: list[BaseNotifier] | BaseNotifier | None = None,
+        use_persistence: bool = True,
     ) -> None:
-        """Inicializa el orquestador con sus dependencias."""
-        self.db = db or BotDatabase()
+        """Inicializa el orquestador con sus dependencias.
+
+        Args:
+            db: Instancia opcional de persistencia en base de datos.
+            browser_manager: Gestor del ciclo de vida del navegador.
+            notifiers: Lista o instancia unica de notificadores.
+            use_persistence: Si es False, desactiva la persistencia en SQLite.
+        """
+        self.use_persistence = use_persistence
+        self.db = db if db is not None else (BotDatabase() if use_persistence else None)
         self.browser_manager = browser_manager or BrowserManager()
         if isinstance(notifiers, list):
             self.notifiers = notifiers
@@ -41,7 +50,7 @@ class BotOrchestratorService:
         force_reprocess: bool = False,
         downloads_dir: Path = DOWNLOADS_DIR,
     ) -> list[ExecutionResult]:
-        """Procesa una lista de tareas respetando la regla de idempotencia.
+        """Procesa una lista de tareas respetando la regla de idempotencia si la persistencia esta activa.
 
         Args:
             items: Lista de elementos de trabajo a procesar.
@@ -54,9 +63,14 @@ class BotOrchestratorService:
         results: list[ExecutionResult] = []
         pending_items: list[TaskItem] = []
 
-        # 1. Verificacion de Idempotencia: Filtrar items completados previamente
+        # 1. Verificacion de Idempotencia: Filtrar items completados previamente si hay persistencia
         for item in items:
-            if not force_reprocess and self.db.is_already_completed(item.item_id):
+            if (
+                self.use_persistence
+                and self.db
+                and not force_reprocess
+                and self.db.is_already_completed(item.item_id)
+            ):
                 logger.info("Item '%s' completado previamente. Omitiendo.", item.item_id)
                 res = ExecutionResult(
                     item_id=item.item_id,
@@ -108,7 +122,9 @@ class BotOrchestratorService:
                         processed_at=datetime.now(UTC),
                     )
 
-                self.db.save_record(result)
+                if self.use_persistence and self.db:
+                    self.db.save_record(result)
+
                 results.append(result)
 
         # 4. Despacho opcional de notificaciones configuradas

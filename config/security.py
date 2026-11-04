@@ -11,9 +11,9 @@ from config.settings import (
     ALLOWED_DOMAINS,
     CRED_SERVICE_DB,
     CRED_SERVICE_GRAPH,
+    CRED_SERVICE_INTERNAL_APP,
     CRED_SERVICE_OUTLOOK,
     CRED_SERVICE_PORTAL,
-    CRED_SERVICE_SIGE,
 )
 
 
@@ -90,30 +90,31 @@ def has_portal_credentials() -> bool:
 
 
 # ============================================================================
-# 2. Credenciales de App SIGE (Sistema Interno)
+# 2. Credenciales de App Interna / ERP (Sistema Interno)
 # ============================================================================
 
 
-def save_sige_credentials(username: str, password: str) -> None:
-    """Guarda usuario y contrasena de SIGE en Windows Credential Manager."""
+def save_internal_app_credentials(username: str, password: str) -> None:
+    """Guarda usuario y contrasena del sistema interno en Windows Credential Manager."""
     clean_user = username.strip()
-    keyring.set_password(CRED_SERVICE_SIGE, "_active_user", clean_user)
-    keyring.set_password(CRED_SERVICE_SIGE, clean_user, password)
+    keyring.set_password(CRED_SERVICE_INTERNAL_APP, "_active_user", clean_user)
+    keyring.set_password(CRED_SERVICE_INTERNAL_APP, clean_user, password)
 
 
-def get_sige_credentials() -> tuple[str, str] | None:
-    """Recupera credenciales de SIGE desde Windows Credential Manager."""
-    username = keyring.get_password(CRED_SERVICE_SIGE, "_active_user")
+def get_internal_app_credentials() -> tuple[str, str] | None:
+    """Recupera credenciales del sistema interno desde Windows Credential Manager."""
+    username = keyring.get_password(CRED_SERVICE_INTERNAL_APP, "_active_user")
     if not username:
         return None
-    password = keyring.get_password(CRED_SERVICE_SIGE, username)
+    password = keyring.get_password(CRED_SERVICE_INTERNAL_APP, username)
     return (username, password) if password else None
 
 
-def has_sige_credentials() -> bool:
-    """Determina si existen credenciales configuradas para SIGE."""
-    creds = get_sige_credentials()
+def has_internal_app_credentials() -> bool:
+    """Determina si existen credenciales configuradas para el sistema interno."""
+    creds = get_internal_app_credentials()
     return creds is not None and len(creds[0]) > 0 and len(creds[1]) > 0
+
 
 
 # ============================================================================
@@ -234,7 +235,7 @@ def prompt_credentials_menu() -> None:
         print("    MENU DE GESTION DE CREDENCIALES EN WINDOWS (DPAPI)   ")
         print("========================================================")
         print(" 1. Configurar Credenciales App Web (Portal Objetivo)")
-        print(" 2. Configurar Credenciales App SIGE (Sistema Interno)")
+        print(" 2. Configurar Credenciales App Interna / ERP")
         print(" 3. Configurar Conexion de Base de Datos")
         print(" 4. Configurar Microsoft Graph API (Correos con ';')")
         print(" 5. Configurar Destinatarios Microsoft Outlook Local")
@@ -254,12 +255,12 @@ def prompt_credentials_menu() -> None:
                 print("[AVISO] Usuario y contrasena no pueden estar vacios.")
 
         elif opcion == "2":
-            print("\n--- Configuracion de App SIGE ---")
-            user = input("Usuario SIGE: ").strip()
-            pwd = getpass.getpass("Contrasena SIGE: ").strip()
+            print("\n--- Configuracion de App Interna / ERP ---")
+            user = input("Usuario: ").strip()
+            pwd = getpass.getpass("Contrasena: ").strip()
             if user and pwd:
-                save_sige_credentials(user, pwd)
-                print("[OK] Credenciales de SIGE guardadas exitosamente.")
+                save_internal_app_credentials(user, pwd)
+                print("[OK] Credenciales de App Interna / ERP guardadas exitosamente.")
             else:
                 print("[AVISO] Los campos no pueden estar vacios.")
 
