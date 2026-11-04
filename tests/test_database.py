@@ -1,4 +1,4 @@
-"""Tests for BotDatabase SQLite state repository."""
+"""Pruebas del repositorio de estado e historial SQLite en BotDatabase."""
 
 from datetime import UTC, datetime
 from pathlib import Path
@@ -11,20 +11,20 @@ from core.models import ExecutionResult, ExecutionStatus
 
 @pytest.fixture
 def temp_db(tmp_path: Path) -> BotDatabase:
-    """Provides a fresh isolated BotDatabase in a temporary path."""
+    """Provee una instancia limpia y aislada de BotDatabase en directorio temporal."""
     db_file = tmp_path / "test_memory.db"
     return BotDatabase(db_path=db_file)
 
 
 def test_database_initialization(temp_db: BotDatabase) -> None:
-    """Verifies that database file and tables are properly created."""
+    """Verifica que el archivo de base de datos y sus tablas se creen correctamente."""
     assert temp_db.db_path.exists()
     records = temp_db.get_all_records()
     assert len(records) == 0
 
 
 def test_save_and_get_record(temp_db: BotDatabase) -> None:
-    """Tests saving and retrieving a task record."""
+    """Prueba el guardado y recuperacion de un registro de tarea."""
     result = ExecutionResult(
         item_id="DOC-001",
         status=ExecutionStatus.SUCCESS,
@@ -45,10 +45,10 @@ def test_save_and_get_record(temp_db: BotDatabase) -> None:
 
 
 def test_idempotency_check(temp_db: BotDatabase) -> None:
-    """Verifies is_already_completed correctly detects finished vs unfinished tasks."""
+    """Verifica que is_already_completed detecte correctamente tareas finalizadas vs no finalizadas."""
     assert not temp_db.is_already_completed("DOC-002")
 
-    # Record a successful result
+    # Registrar un resultado exitoso
     res_success = ExecutionResult(
         item_id="DOC-002",
         status=ExecutionStatus.SUCCESS,
@@ -56,19 +56,19 @@ def test_idempotency_check(temp_db: BotDatabase) -> None:
     temp_db.save_record(res_success)
     assert temp_db.is_already_completed("DOC-002")
 
-    # Record a failed result
+    # Registrar un resultado fallido
     res_failed = ExecutionResult(
         item_id="DOC-003",
         status=ExecutionStatus.FAILED,
         error_message="Network timeout",
     )
     temp_db.save_record(res_failed)
-    # A failed item should NOT be considered already completed (must retry)
+    # Un item fallido NO debe considerarse completado (permite reintento)
     assert not temp_db.is_already_completed("DOC-003")
 
 
 def test_clear_memory(temp_db: BotDatabase) -> None:
-    """Tests clearing the memory database."""
+    """Prueba el vaciado de la base de datos de memoria."""
     res = ExecutionResult(item_id="DOC-004", status=ExecutionStatus.SUCCESS)
     temp_db.save_record(res)
     assert len(temp_db.get_all_records()) == 1

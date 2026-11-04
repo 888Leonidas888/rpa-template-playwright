@@ -1,4 +1,4 @@
-"""Reference implementation of a portal Page Object Model."""
+"""Implementacion de referencia de un Page Object Model para un portal web."""
 
 from pathlib import Path
 
@@ -12,9 +12,9 @@ logger = get_logger()
 
 
 class SamplePortalPage(BasePage):
-    """Example Page Object demonstrating authentication and report download."""
+    """Page Object de ejemplo que demuestra autenticacion y descarga de reportes."""
 
-    # Selectors central definition
+    # Definicion centralizada de selectores
     LOGIN_USER_INPUT = "input[name='username'], #txtUser"
     LOGIN_PASS_INPUT = "input[name='password'], #txtPassword"
     LOGIN_SUBMIT_BTN = "button[type='submit'], #btnLogin"
@@ -26,43 +26,43 @@ class SamplePortalPage(BasePage):
         super().__init__(page)
 
     def login(self, username: str, password: str, login_url: str = "https://example.com/login") -> bool:
-        """Performs authentication flow on the target portal.
+        """Ejecuta el flujo de autenticacion en el portal objetivo.
 
         Args:
-            username: User credential.
-            password: Password credential.
-            login_url: Target login URL.
+            username: Credencial de usuario.
+            password: Password de usuario.
+            login_url: URL de inicio de sesion.
 
         Returns:
-            bool: True if login succeeded (dashboard reached).
+            bool: True si el login fue exitoso (pantalla principal cargada).
         """
-        logger.info("Executing login flow for user: %s", username)
+        logger.info("Ejecutando flujo de autenticacion para usuario: %s", username)
         self.navigate(login_url)
 
         self.safe_fill(self.LOGIN_USER_INPUT, username)
         self.safe_fill(self.LOGIN_PASS_INPUT, password)
         self.safe_click(self.LOGIN_SUBMIT_BTN)
 
-        # Confirm successful login via presence of dashboard element
+        # Confirmar login exitoso mediante presencia de elemento del dashboard
         success = self.wait_for_element(self.DASHBOARD_INDICATOR, timeout_ms=10000)
         if success:
-            logger.info("Login succeeded.")
+            logger.info("Autenticacion completada exitosamente.")
         else:
-            logger.warning("Dashboard element not detected after login attempt.")
+            logger.warning("No se detecto el elemento de confirmacion tras intentar login.")
             self.take_screenshot("failed_login.png")
         return success
 
     def download_report_by_id(self, item_id: str, output_dir: Path = DOWNLOADS_DIR) -> Path | None:
-        """Searches for an item and captures the downloaded report file.
+        """Busca un elemento y captura el archivo de reporte descargado.
 
         Args:
-            item_id: Query or document identifier.
-            output_dir: Destination folder for the downloaded file.
+            item_id: Identificador de consulta o documento.
+            output_dir: Carpeta de destino para el archivo descargado.
 
         Returns:
-            Optional[Path]: File path if downloaded successfully, None otherwise.
+            Path | None: Ruta del archivo si la descarga fue exitosa, None en caso contrario.
         """
-        logger.info("Searching report for item: %s", item_id)
+        logger.info("Buscando reporte para item: %s", item_id)
         self.safe_fill(self.SEARCH_INPUT, item_id)
 
         try:
@@ -74,6 +74,6 @@ class SamplePortalPage(BasePage):
             )
             return downloaded_file
         except Exception as e:
-            logger.error("Download failed for item '%s': %s", item_id, e)
+            logger.error("Fallo la descarga para el item '%s': %s", item_id, e)
             self.take_screenshot(f"download_error_{item_id}.png")
             return None

@@ -1,11 +1,12 @@
-# Reglas Obligatorias y Estándar de Desarrollo para Bots RPA (STN Framework)
+# Reglas Obligatorias y Estándar de Desarrollo para Bots RPA
 
 Este documento define las directrices y restricciones obligatorias que **todo agente de IA o desarrollador** debe acatar sin excepción al crear, modificar o extender bots en este repositorio o en proyectos derivados de esta plantilla.
 
 ---
 
-## 1. Cero Sobreingeniería y Simplicidad Radical (KISS / YAGNI)
+## 1. Cero Sobreingeniería y Simplicidad Radical (KISS / YAGNI / DRY)
 * **Preguntar antes de asumir**: Si un requerimiento o flujo no queda 100% claro, es obligatorio preguntar al usuario y **nunca tomar decisiones técnicas en solitario**.
+* **Verificación previa de existencia (DRY)**: Antes de implementar cualquier componente, función o utilidad, verificar si ya existe en el repositorio para reutilizar y evitar duplicar código.
 * **Economía de código**: Si una solución se puede implementar en 3 líneas de código, queda prohibido extenderla a 20. Buscar siempre la sencillez técnica.
 * **Cero fallbacks silenciosos no solicitados**: Prohibido implementar mecanismos de fallback heurísticos, cascadas de consulta o valores inventados que no hayan sido expresamente solicitados por el usuario. Si algo falla o no se encuentra, fallar de forma controlada (*fail-fast*).
 
@@ -19,7 +20,7 @@ Este documento define las directrices y restricciones obligatorias que **todo ag
 ---
 
 ## 3. Documentación en Español y Código Autoleíble
-* **Idioma de documentación**: Toda la documentación de proyecto (`README.md`, `MEMORY.md`, manuales) y los docstrings del código deben redactarse en **español**.
+* **Idioma de documentación**: Toda la documentación de proyecto (`README.md`, `MEMORY.md`, manuales) y los docstrings del código deben redactarse en **español** (manteniendo en inglés únicamente términos técnicos estándar como *timeout*, *payload*, *headless*, *channel*, etc.).
 * **Comentarios estrictamente necesarios**: El código debe ser limpio y autoleíble. No escribir comentarios obvios que repitan lo que el código hace. Reservar comentarios únicamente para explicar decisiones de negocio complejas o no evidentes.
 * **Nombres de símbolos en inglés técnico**: Nombres de clases, variables, funciones y métodos se redactan en inglés técnico (`process_items`, `BotDatabase`, etc.).
 
@@ -34,7 +35,7 @@ Este documento define las directrices y restricciones obligatorias que **todo ag
 
 ## 5. Directrices de Interfaz de Usuario (UI / Máscara Web)
 * **Stack Vanilla**: De requerirse una interfaz o máscara visual de usuario, se debe utilizar exclusivamente **HTML5, CSS3 y JavaScript Vanilla** nativo (sin frameworks pesados innecesarios).
-* **Prohibición de Emoticones (Emojis)**: Queda terminantemente prohibido usar emoticones o emojis Unicode (🚀, 💾, ⚙️, ❌) en botones, etiquetas, tablas o consola.
+* **Prohibición de Emoticones (Emojis)**: Queda terminantemente prohibido usar emoticones o emojis Unicode en botones, etiquetas, tablas o consola.
 * **Iconografía Profesional**: Utilizar siempre iconos vectoriales profesionales de **Font Awesome Free** (`<i class="fa-solid fa-nombre-icono"></i>`) o Bootstrap Icons.
 * **Estilo Visual Oscuro (Dark Theme)**: La máscara debe tener una estética moderna, limpia y minimalista con paleta oscura inspirada en la interfaz del chat de Gemini (`#131314` de fondo, `#1e1f20` en tarjetas/superficies, bordes `#3c4043` y acentos `#a8c7fa`).
 
@@ -43,7 +44,7 @@ Este documento define las directrices y restricciones obligatorias que **todo ag
 ## 6. Gestión de Credenciales y Menú Interactivo en `auth`
 * **Menú de Selección**: Al ejecutar `python main.py auth`, debe desplegarse un menú interactivo en consola para elegir qué servicio configurar:
   1. App Web (Portal objetivo)
-  2. App SIGE (Sistema interno)
+  2. App Interna / ERP (Sistema interno)
   3. Conexión de Base de Datos
   4. Microsoft Graph API
   5. Destinatarios Microsoft Outlook Local
@@ -64,9 +65,10 @@ Este documento define las directrices y restricciones obligatorias que **todo ag
 
 ---
 
-## 8. Estrategia de Navegación y Argumento `--headless`
-* **Navegadores Nativos**: Usar por defecto Google Chrome (`channel="chrome"`). Si no está disponible, conmutar automáticamente a Microsoft Edge (`channel="msedge"`). Si ninguno existe, fallar con `BrowserNotFoundError` y notificar el error.
+## 8. Estrategia de Navegación y Persistencia
+* **Navegadores Nativos Locales**: Usar por defecto Google Chrome (`channel="chrome"`). Si no está disponible, conmutar automáticamente a Microsoft Edge (`channel="msedge"`). No se requiere descargar ni distribuir navegadores congelados o portables.
 * **Flag `--headless` Obligatorio**: Todo comando `run` debe incluir `--headless`. Por defecto corre con ventana visible (`False`); si se invoca el flag, corre en segundo plano (`True`). En servidores o tareas programadas desatendidas, es obligatorio incluir `--headless`.
+* **Persistencia Opcional con SQLite**: La persistencia en base de datos local SQLite para memoria o idempotencia es opcional. El bot debe diseñarse para operar tanto con persistencia activa como sin ella.
 
 ---
 

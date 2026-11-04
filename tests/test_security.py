@@ -8,19 +8,19 @@ from config.security import (
     SecurityValidationError,
     get_db_credentials,
     get_graph_credentials,
+    get_internal_app_credentials,
     get_outlook_recipients,
     get_portal_credentials,
-    get_sige_credentials,
     has_db_credentials,
     has_graph_credentials,
+    has_internal_app_credentials,
     has_outlook_recipients,
     has_portal_credentials,
-    has_sige_credentials,
     save_db_credentials,
     save_graph_credentials,
+    save_internal_app_credentials,
     save_outlook_recipients,
     save_portal_credentials,
-    save_sige_credentials,
     validate_url,
 )
 
@@ -62,14 +62,14 @@ def test_portal_credentials_roundtrip() -> None:
     with patch("keyring.set_password", side_effect=mock_set), patch(
         "keyring.get_password", side_effect=mock_get
     ):
-        save_portal_credentials("operador@stn.com", "ClaveSecreta123!")
+        save_portal_credentials("operador@empresa.com", "ClaveSecreta123!")
         assert has_portal_credentials()
         creds = get_portal_credentials()
-        assert creds == ("operador@stn.com", "ClaveSecreta123!")
+        assert creds == ("operador@empresa.com", "ClaveSecreta123!")
 
 
-def test_sige_credentials_roundtrip() -> None:
-    """Verifica el guardado y recuperacion de credenciales de SIGE."""
+def test_internal_app_credentials_roundtrip() -> None:
+    """Verifica el guardado y recuperacion de credenciales de la app interna."""
     fake_storage: dict[tuple[str, str], str] = {}
 
     def mock_set(service: str, username: str, password: str) -> None:
@@ -81,9 +81,9 @@ def test_sige_credentials_roundtrip() -> None:
     with patch("keyring.set_password", side_effect=mock_set), patch(
         "keyring.get_password", side_effect=mock_get
     ):
-        save_sige_credentials("usuario_sige", "ClaveSige123")
-        assert has_sige_credentials()
-        assert get_sige_credentials() == ("usuario_sige", "ClaveSige123")
+        save_internal_app_credentials("usuario_interno", "ClaveInterna123")
+        assert has_internal_app_credentials()
+        assert get_internal_app_credentials() == ("usuario_interno", "ClaveInterna123")
 
 
 def test_db_credentials_roundtrip() -> None:
@@ -99,12 +99,12 @@ def test_db_credentials_roundtrip() -> None:
     with patch("keyring.set_password", side_effect=mock_set), patch(
         "keyring.get_password", side_effect=mock_get
     ):
-        save_db_credentials("10.0.0.1", "BD_SIGE", "usr_bot", "pass_bd")
+        save_db_credentials("10.0.0.1", "BD_PRODUCCION", "usr_bot", "pass_bd")
         assert has_db_credentials()
         db = get_db_credentials()
         assert db is not None
         assert db["host"] == "10.0.0.1"
-        assert db["database"] == "BD_SIGE"
+        assert db["database"] == "BD_PRODUCCION"
 
 
 def test_graph_and_outlook_recipients() -> None:
@@ -122,7 +122,7 @@ def test_graph_and_outlook_recipients() -> None:
     ):
         # Graph
         save_graph_credentials(
-            "tenant-123", "client-123", "secret-123", "bot@stn.com", ["a@stn.com", "b@stn.com"]
+            "tenant-123", "client-123", "secret-123", "bot@empresa.com", ["a@empresa.com", "b@empresa.com"]
         )
         assert has_graph_credentials()
         g_data = get_graph_credentials()
@@ -130,8 +130,8 @@ def test_graph_and_outlook_recipients() -> None:
         assert len(g_data["recipient_emails"]) == 2
 
         # Outlook
-        save_outlook_recipients(["jefe@stn.com", "equipo@stn.com"])
+        save_outlook_recipients(["jefe@empresa.com", "equipo@empresa.com"])
         assert has_outlook_recipients()
         out_emails = get_outlook_recipients()
         assert len(out_emails) == 2
-        assert "jefe@stn.com" in out_emails
+        assert "jefe@empresa.com" in out_emails

@@ -20,7 +20,7 @@ param (
 $ErrorActionPreference = "Stop"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "       Generador de Proyectos RPA (Scaffolding STN)        " -ForegroundColor Cyan
+Write-Host "       Generador de Proyectos RPA (Scaffolding)            " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "Nombre del Bot : $Name" -ForegroundColor Yellow
 Write-Host "Destino        : $Destination" -ForegroundColor Yellow

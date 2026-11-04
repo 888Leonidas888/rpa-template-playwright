@@ -10,14 +10,14 @@ from rich.table import Table
 from config.logger_config import get_logger
 from config.security import (
     get_graph_credentials,
+    get_internal_app_credentials,
     get_outlook_recipients,
     get_portal_credentials,
-    get_sige_credentials,
     has_db_credentials,
     has_graph_credentials,
+    has_internal_app_credentials,
     has_outlook_recipients,
     has_portal_credentials,
-    has_sige_credentials,
     prompt_credentials_menu,
 )
 from core.database import BotDatabase
@@ -53,13 +53,13 @@ def handle_auth(args: argparse.Namespace) -> None:
         else:
             table.add_row("App Web", "[bold red]PENDIENTE[/]", "Requerido para navegacion")
 
-        # 2. App SIGE
-        if has_sige_credentials():
-            creds = get_sige_credentials()
+        # 2. App Interna / ERP
+        if has_internal_app_credentials():
+            creds = get_internal_app_credentials()
             user = creds[0] if creds else "Configurado"
-            table.add_row("App SIGE", "[bold green]CONFIGURADO[/]", f"Usuario: {user}")
+            table.add_row("App Interna / ERP", "[bold green]CONFIGURADO[/]", f"Usuario: {user}")
         else:
-            table.add_row("App SIGE", "[yellow]NO CONFIGURADO[/]", "Opcional")
+            table.add_row("App Interna / ERP", "[yellow]NO CONFIGURADO[/]", "Opcional")
 
         # 3. Base de Datos (Ocultando infraestructura sensible)
         if has_db_credentials():
@@ -145,9 +145,14 @@ def handle_run(args: argparse.Namespace) -> None:
 
     headless = args.headless
     browser_manager = BrowserManager(headless=headless)
-    orchestrator = BotOrchestratorService(browser_manager=browser_manager, notifiers=notifiers)
+    use_persistence = not getattr(args, "no_db", False)
+    orchestrator = BotOrchestratorService(
+        browser_manager=browser_manager,
+        notifiers=notifiers,
+        use_persistence=use_persistence,
+    )
 
-    console.print(f"[cyan]Iniciando procesamiento de {len(task_items)} items[/] (Modo Headless: [bold]{headless}[/])...")
+    console.print(f"[cyan]Iniciando procesamiento de {len(task_items)} items[/] (Modo Headless: [bold]{headless}[/], Persistencia DB: [bold]{use_persistence}[/])...")
 
     try:
         results = orchestrator.process_items(task_items, force_reprocess=args.force)
@@ -178,7 +183,7 @@ def main() -> None:
     """Punto de entrada del procesador de argumentos CLI."""
     parser = argparse.ArgumentParser(
         prog="rpa-bot",
-        description="CLI Estandar para Bots RPA con Playwright y Python (STN)",
+        description="CLI Estandar para Bots RPA con Playwright y Python",
     )
     subparsers = parser.add_subparsers(dest="command", help="Subcomandos disponibles")
 
@@ -212,6 +217,12 @@ def main() -> None:
         "--force",
         action="store_true",
         help="Forzar reprocesamiento de items ya completados en SQLite",
+    )
+    run_parser.add_argument(
+        "--no-db",
+        action="store_true",
+        default=False,
+        help="Ejecutar sin persistencia en base de datos SQLite (opcional)",
     )
 
     # 2. auth command
