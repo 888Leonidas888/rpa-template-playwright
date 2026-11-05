@@ -1,191 +1,233 @@
-# RPA Playwright Bot Template (Arquitectura Estándar)
+# RPA Playwright Bot Framework
 
-Plantilla corporativa y marco de trabajo estandarizado para la creación de Bots de Automatización de Procesos (RPA) y Web Scraping utilizando **Python**, **Playwright**, **Google Chrome / Microsoft Edge**, **Windows Credential Manager (DPAPI)**, persistencia opcional **SQLite**, notificaciones (**Microsoft Graph / Outlook**) y empaquetado autónomo con **PyInstaller**.
-
----
-
-## 1. Arquitectura del Proyecto
-
-El proyecto sigue una arquitectura en capas limpia, desacoplada y orientada a la mantenibilidad:
-
-```
-rpa-playwright-template/
-├── .agents/                      # Reglas y Skills locales para asistentes de IA (Antigravity / Claude / Copilot)
-│   ├── rules/rpa_standard.md     # Las 10 Reglas obligatorias de arquitectura, seguridad y cero improvisacion
-│   └── skills/rpa-scaffold/      # Guia procedimental para crear paginas POM, orquestacion y empaquetado
-├── AGENTS.md                     # Directrices principales de entrada para asistentes de codigo
-├── MEMORY.md                     # Memoria operativa continua del bot (flujo, decisiones y estados)
-├── cli/                          # Interfaz de linea de comandos (Argparse)
-│   ├── __init__.py
-│   └── commands.py               # Subcomandos: run, auth, status, clear-memory
-├── config/                       # Configuracion y utilidades del sistema
-│   ├── __init__.py
-│   ├── settings.py               # Rutas de ejecucion, timeouts y dominios autorizados
-│   ├── security.py               # Menu interactivo y gestion DPAPI (Web, Interna, BBDD, Graph, Outlook)
-│   └── logger_config.py          # Logging rotativo (consola y archivo logs/bot.log)
-├── core/                         # Capa de dominio y persistencia
-│   ├── __init__.py
-│   ├── models.py                 # DTOs: TaskItem, ExecutionResult, ExecutionStatus
-│   └── database.py               # Base SQLite local para auditoria e idempotencia opcional (bot_memory.db)
-├── infrastructure/               # Adaptadores externos y drivers del sistema operativo
-│   ├── __init__.py
-│   ├── browser_manager.py        # Gestor de Playwright: Chrome (primario) -> Edge (fallback) -> Error
-│   └── notifiers/                # Despacho de notificaciones (Graph API y Outlook local en segundo plano)
-│       ├── base_notifier.py
-│       ├── graph_notifier.py
-│       └── outlook_notifier.py
-├── pages/                        # Page Object Model (POM)
-│   ├── __init__.py
-│   ├── base_page.py              # Clase base con clics seguros, capturas en fallos y descargas
-│   └── sample_portal_page.py     # Ejemplo de implementacion para paginas web objetivo
-├── services/                     # Capa de casos de uso y orquestacion
-│   ├── __init__.py
-│   └── bot_service.py            # Orquestador del flujo: lectura, validacion, ejecucion y reporte
-├── tests/                        # Suite de pruebas automatizadas (pytest)
-│   ├── test_browser_manager.py   # Pruebas de estrategia de navegadores Chrome/Edge
-│   ├── test_database.py          # Pruebas de base de datos e idempotencia
-│   ├── test_security.py          # Pruebas de validacion HTTPS y DPAPI (Web, Interna, BBDD, Graph, Outlook)
-│   ├── test_orchestrator.py      # Pruebas del orquestador de negocio simulado
-│   └── test_cli.py               # Pruebas de interfaz CLI y Rich
-├── ui/                           # Mascara web para usuario (HTML5, CSS3 y JS Vanilla oscuro con Font Awesome)
-│   ├── index.html
-│   ├── style.css
-│   └── app.js
-├── downloads/                    # Carpeta local para almacenamiento de archivos descargados
-├── logs/                         # Carpeta local para logs rotativos y capturas de pantalla de error
-├── build.ps1                     # Script de empaquetado automatizado con PyInstaller (--onedir)
-├── new-bot.ps1                   # Script para generar un nuevo proyecto a partir de esta plantilla
-├── main.py                       # Punto de entrada de la aplicacion
-└── requirements.txt              # Dependencias de produccion y desarrollo
-```
+## 1. Propósito y Descripción
+Plantilla corporativa y marco de trabajo estandarizado para la creación de Bots de Automatización de Procesos Robóticos (RPA) y Web Scraping. Automatiza la extracción de datos, descarga de reportes y tramitación web operando directamente con los navegadores nativos del sistema operativo (Google Chrome y Microsoft Edge), con almacenamiento de credenciales seguras en Windows DPAPI, telemetría informativa no bloqueante en SQLite y notificaciones duales mediante Microsoft Graph API o Microsoft Outlook de escritorio.
 
 ---
 
-## 2. Estrategia de Navegadores (Navegadores Nativos del Sistema)
-
-1. **Google Chrome (Canal Primario)**: Se intenta instanciar `channel="chrome"`.
-2. **Microsoft Edge (Fallback Automático)**: Si Chrome no está presente, conmuta automáticamente a `channel="msedge"` (preinstalado en Windows 10/11).
-3. **Fallo Controlado**: Si ninguno de los dos navegadores está disponible, se dispara la excepción `BrowserNotFoundError`, se registra en el log y se despacha una notificación de alerta inmediata al operador (*fail-fast*).
-4. **Cero Navegadores Portables**: No se requiere descargar ni empaquetar navegadores Chromium externos.
+## 2. Stack Tecnológico y Arquitectura
+- **Lenguaje:** Python 3.10+
+- **Automatización Web (Core):** Playwright (modo síncrono nativo sobre Google Chrome y Microsoft Edge del sistema).
+- **Arquitectura:** Arquitectura Limpia y Modular basada en Page Object Model (POM), orquestador desacoplado y servicios de infraestructura independientes.
+- **Gestión de Credenciales:** Windows Credential Manager vía DPAPI (`keyring`), asegurando aislamiento por prefijo de bot.
+- **Formato de Consola:** `rich` (tablas, paneles de estado e interactividad sobria, sin emoticones).
+- **Almacenamiento / Telemetría:** SQLite en modo WAL (`bot_memory.db`) para control de idempotencia y trazabilidad de ejecuciones con fecha y hora local del sistema (`datetime.now()`). Operación de persistencia estrictamente no bloqueante.
+- **Notificaciones:** Microsoft Graph API (desatendido en la nube) y Microsoft Outlook local (vía COM en segundo plano).
+- **Empaquetado:** PyInstaller en modo `--onedir` con icono corporativo.
 
 ---
 
-## 3. Puesta en Marcha Rápida (Desarrollo)
+## 3. Prerrequisitos del Sistema
+- **Sistema Operativo:** Windows 10, Windows 11 o Windows Server 2016+.
+- **Python:** Versión 3.10 o superior instalada.
+- **Navegadores Compatibles:** Google Chrome o Microsoft Edge instalado nativamente en el sistema.
+- **Conectividad:** Acceso a la red corporativa o VPN si el portal objetivo o las APIs lo requieren.
 
-### Requisitos Previos
-* Windows 10/11 o Windows Server con Google Chrome o Microsoft Edge.
-* Python 3.10 o superior instalado.
+---
 
-### 1. Inicializar Entorno Virtual
+## 4. Configuración del Entorno de Desarrollo
+Instrucciones estrictas para inicializar y activar el entorno virtual y dependencias (prohibido instalar paquetes en el entorno global):
+
 ```powershell
+# 1. Crear entorno virtual
 python -m venv .venv
-.\.venv\Scripts\activate
+
+# 2. Activar entorno virtual en Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+
+# 3. Actualizar pip e instalar dependencias fijadas
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 2. Configurar Credenciales Seguras (Menú Interactivo DPAPI)
-Ejecute el menú interactivo para configurar cualquiera de los servicios requeridos:
+---
+
+## 5. Configuración de Variables de Entorno y Credenciales
+
+### Variables en `config/settings.py`
+Las variables generales de operación (rutas, timeouts y dominios autorizados) se gestionan en `config/settings.py`:
+- `DEFAULT_TIMEOUT_MS`: Tiempo de espera estándar para elementos de UI (por defecto `30000`).
+- `NAVIGATION_TIMEOUT_MS`: Tiempo de espera para carga completa de páginas (`45000`).
+- `ALLOWED_DOMAINS`: Lista de dominios permitidos para navegación segura.
+
+### Gestión de Credenciales Seguras en Windows DPAPI
+Las credenciales sensibles **nunca se almacenan en código ni en archivos de texto**. Se cifran directamente en el perfil del usuario activo de Windows:
+
 ```powershell
+# Desplegar el menú interactivo de credenciales
 python main.py auth
 ```
-Opciones disponibles en el menú:
-1. Credenciales App Web (Portal objetivo)
-2. Credenciales App Interna / ERP (Sistema interno)
-3. Conexión de Base de Datos
-4. Microsoft Graph API (con correos separados por `;`)
-5. Destinatarios Microsoft Outlook Local
 
-Para verificar el estado de las credenciales configuradas:
+Opciones disponibles en el menú interactivo:
+1. **App Web**: Usuario y contraseña para el portal objetivo.
+2. **App Interna / ERP**: Credenciales para sistemas locales.
+3. **Base de Datos**: Host, base de datos, usuario y contraseña.
+4. **Microsoft Graph API**: Tenant ID, Client ID, Client Secret, remitente y destinatarios separados por `;`.
+5. **Outlook Local**: Lista de destinatarios separados por `;`.
+
+Para verificar la presencia de credenciales sin revelar secretos:
 ```powershell
 python main.py auth verify
 ```
 
-### 3. Ejecutar el Bot
+> [!IMPORTANT]
+> **Aislamiento por Bot:** Cada nuevo bot derivado debe definir sus propios identificadores de servicio en `config/settings.py` (ej. `BOT_SUNAT_PORTAL`) para evitar colisiones con otros procesos en el mismo equipo.
 
+---
+
+## 6. Ejecución del Bot
+
+### Ejecución en Modo Desarrollo (Navegador Visible)
+Ideal para depuración y supervisión visual:
 ```powershell
-# Ejecución visible por defecto (ideal para supervisión)
 python main.py run --items "PO-1001,PO-1002"
+```
 
-# Ejecución en segundo plano (Headless)
+### Ejecución en Modo Desatendido (Headless)
+Mandatorio para servidores o tareas programadas en Windows Task Scheduler:
+```powershell
 python main.py run --items "PO-1001,PO-1002" --headless
+```
 
-# Ejecución sin persistencia en base de datos SQLite (opcional)
-python main.py run --items "PO-1001" --no-db
-
-# Ejecución con notificación por Microsoft Graph (valida correos con ';')
+### Ejecución con Notificaciones por Microsoft Graph API
+Requiere correos separados por `;` (cierre inmediato con error si faltan):
+```powershell
 python main.py run --items "PO-1001" --headless --notify-graph --emails "operador@empresa.com;supervisor@empresa.com"
+```
 
-# Ejecución con notificación por Microsoft Outlook local (en segundo plano, sin requerir Outlook abierto)
+### Ejecución con Notificaciones por Microsoft Outlook Local
+Envía en segundo plano sin requerir que Outlook esté visible en pantalla:
+```powershell
 python main.py run --items "PO-1001" --headless --notify-outlook --emails "operador@empresa.com;supervisor@empresa.com"
+```
 
-# Forzar reprocesamiento (ignorando registros previos en SQLite)
+### Forzar Reprocesamiento de Items
+Ignora el estado completado previo en la base de datos de memoria:
+```powershell
 python main.py run --items "PO-1001" --force
 ```
 
----
-
-## 4. Generación de un Nuevo Bot desde la Plantilla
-
-Para crear un nuevo proyecto sin copiar archivos manualmente ni arrastrar historiales viejos:
-
+### Consulta de Estado y Limpieza de Memoria
 ```powershell
-.\new-bot.ps1 -Name "bot-portal-facturas" -Destination "C:\proyectos\bot-portal-facturas"
-```
+# Ver tabla de auditoría con Rich
+python main.py status
 
-El script se encargará de:
-1. Copiar toda la arquitectura limpia (excluyendo entornos virtuales, logs y bases de datos).
-2. Personalizar los nombres en los scripts y comandos CLI.
-3. Inicializar un repositorio Git limpio con la rama `caracteristica/scaffold-inicial`.
-4. Incluir `AGENTS.md`, `MEMORY.md` y `.agents/` para que el asistente de IA siga el mismo estándar automáticamente.
-
----
-
-## 5. Pruebas y Control de Calidad
-
-Antes de realizar cambios o empaquetar, compruebe que todas las pruebas pasen y el código cumpla los estándares de formato:
-
-```powershell
-# Ejecución de pruebas unitarias
-pytest
-
-# Análisis estático y linter
-ruff check .
+# Limpiar historial de memoria SQLite
+python main.py clear-memory
 ```
 
 ---
 
-## 6. Compilación a Ejecutable Independiente (.exe)
+## 7. Estructura del proyecto
 
-Para generar la distribución binaria de producción:
+```txt
+rpa-playwright-template/
+│
+├── .agents/                      # Directrices y skills locales para agentes de IA
+│   ├── rules/rpa_standard.md     # Las 12 Reglas obligatorias de desarrollo y arquitectura
+│   └── skills/rpa-scaffold/      # Guía procedimental y generador de README
+├── AGENTS.md                     # Directrices principales de entrada para asistentes
+├── MEMORY.md                     # Memoria operativa, esquema SQLite y registro de decisiones
+│
+├── assets/                       # Recursos estáticos corporativos
+│   └── icons/
+│       └── python.ico            # Icono corporativo para la compilación del ejecutable
+│
+├── cli/                          # Capa de presentación por consola (CLI)
+│   ├── __init__.py
+│   └── commands.py               # Comandos: run, auth, status, clear-memory con Rich
+│
+├── config/                       # Configuración y seguridad
+│   ├── __init__.py
+│   ├── settings.py               # Rutas, timeouts y nombres de servicio DPAPI
+│   ├── security.py               # Menú interactivo y cifrado en Windows DPAPI
+│   └── logger_config.py          # Logging rotativo a consola y archivo
+│
+├── core/                         # Capa de dominio y persistencia
+│   ├── __init__.py
+│   ├── models.py                 # DTOs: TaskItem, ExecutionResult, ExecutionStatus
+│   └── database.py               # Base SQLite no bloqueante para auditoría (bot_memory.db)
+│
+├── infrastructure/               # Drivers y adaptadores de comunicación externa
+│   ├── __init__.py
+│   ├── browser_manager.py        # Orquestación de Chrome primario y Edge fallback nativos
+│   └── notifiers/                # Adaptadores de notificación (Graph API y Outlook local)
+│       ├── base_notifier.py
+│       ├── graph_notifier.py
+│       └── outlook_notifier.py
+│
+├── pages/                        # Page Object Model (POM)
+│   ├── __init__.py
+│   ├── base_page.py              # Clase base con clics seguros, capturas y descargas
+│   └── sample_portal_page.py     # Página de ejemplo extensible para portales web
+│
+├── services/                     # Lógica de negocio y orquestación
+│   ├── __init__.py
+│   └── bot_service.py            # Orquestador del flujo operativo
+│
+├── tests/                        # Pruebas automatizadas (pytest)
+│   ├── test_browser_manager.py
+│   ├── test_cli.py
+│   ├── test_database.py
+│   ├── test_orchestrator.py
+│   └── test_security.py
+│
+├── ui/                           # Máscara web opcional (HTML5, CSS y JS Vanilla)
+│   ├── index.html
+│   ├── style.css
+│   └── app.js
+│
+├── downloads/                    # Descargas locales generadas por el bot
+├── logs/                         # Trazabilidad rotativa y capturas de error
+├── build.ps1                     # Script de compilación limpia con PyInstaller
+├── new-bot.ps1                   # Script para generar nuevos bots a partir de esta plantilla
+├── main.py                       # Punto de entrada de la aplicación
+├── requirements.txt              # Dependencias fijadas del proyecto
+└── README.md                     # Documentación técnica estandarizada
+```
+
+---
+
+## 8. Distribución y configuración
+
+### Compilación Limpia a Ejecutable Independiente (.exe)
+Todo bot debe compilarse de forma directa y limpia **sin mantener archivos `*.spec`** que causan desincronizaciones de dependencias. Se utiliza el icono corporativo ubicado en `assets/icons/python.ico`:
 
 ```powershell
+# Ejecutar compilación automatizada
 .\build.ps1
 ```
 
-El binario resultante se ubicará en `dist/rpa-bot/`:
-* `dist/rpa-bot/rpa-bot.exe`: Binario principal.
-* `dist/rpa-bot/downloads/`: Directorio de salida.
-* `dist/rpa-bot/logs/`: Directorio para trazabilidad.
+O comando directo equivalente mediante PyInstaller:
+```powershell
+.\.venv\Scripts\pyinstaller.exe --noconfirm --onedir --console `
+    --name "rpa-bot" `
+    --icon "assets/icons/python.ico" `
+    --add-data "config;config" `
+    --add-data "core;core" `
+    --add-data "infrastructure;infrastructure" `
+    --add-data "pages;pages" `
+    --add-data "services;services" `
+    --add-data "cli;cli" `
+    --add-data "assets;assets" `
+    --hidden-import "keyring.backends.Windows" `
+    --hidden-import "playwright" `
+    --hidden-import "playwright.sync_api" `
+    --hidden-import "sqlite3" `
+    --hidden-import "requests" `
+    --hidden-import "rich" `
+    main.py
+```
 
----
-
-## 7. Las 10 Reglas Obligatorias de Desarrollo
-
-Cualquier cambio o extensión a este proyecto (o a cualquier bot creado a partir de esta plantilla) debe cumplir estrictamente las reglas definidas en [AGENTS.md](AGENTS.md) y [.agents/rules/rpa_standard.md](.agents/rules/rpa_standard.md):
-
-1. **Cero Sobreingeniería y DRY**: Si algo no queda claro, preguntar antes de asumir. Verificar previamente si lo solicitado ya existe para reutilizar código. Si una solución toma 3 líneas, no hacerla en 20.
-2. **Responsabilidad Única (SRP)**: Una función hace una tarea. No crear archivos inmensos. Alertar al usuario si se requiere refactorizar.
-3. **Documentación en Español**: Documentación y docstrings en español (términos técnicos estándar en inglés).
-4. **Linters Obligatorios**: Ejecutar `ruff check .` y `pytest` antes de confirmar cambios. Formato sobrio de terminal con `rich` sin emoticones.
-5. **Máscara Web (UI)**: Si se requiere interfaz, usar **HTML5, CSS y JavaScript Vanilla**.
-6. **Cero Emoticones (Iconografía Profesional)**: Prohibido emojis en UI o consola; usar exclusivamente **Font Awesome** o Bootstrap Icons.
-7. **Estilo Dark Theme**: Colores oscuros minimalistas inspirados en la interfaz de Gemini (`#131314` fondo, `#1e1f20` tarjetas, `#a8c7fa` acentos).
-8. **Menú de Credenciales en `auth`**: Menú interactivo para configurar App Web, App Interna / ERP, BBDD, Graph (con correos separados por `;`) y Outlook local en Windows DPAPI.
-9. **Navegadores Nativos, Notificaciones Duales y Persistencia Opcional**:
-   * Google Chrome o Microsoft Edge locales.
-   * `--notify-graph` (Graph API) y `--notify-outlook` (Outlook local en segundo plano).
-   * Persistencia SQLite opcional (`--no-db`).
-10. **Higiene de Repositorio y `MEMORY.md`**:
-    * Ignorar todo archivo no-core en `.gitignore` o moverlo a la carpeta `.trash/` (ignorada).
-    * Mantener siempre actualizado `MEMORY.md` y `README.md` tras cada cambio.
-    * Nunca trabajar sobre `main`; usar ramas kebab-case desde `main` y gestionar cambios con `gh`.
+### Configuración en el Servidor / Equipo Destino
+1. Copiar la carpeta distribuible `dist\rpa-bot\` al servidor o estación de trabajo destino.
+2. Iniciar sesión con la cuenta de Windows que ejecutará el bot.
+3. Configurar las credenciales seguras mediante el ejecutable:
+   ```powershell
+   cd dist\rpa-bot
+   .\rpa-bot.exe auth
+   ```
+4. Programar la ejecución en segundo plano (Headless) en Windows Task Scheduler:
+   ```powershell
+   .\rpa-bot.exe run --headless --notify-outlook --emails "supervisor@empresa.com"
+   ```
