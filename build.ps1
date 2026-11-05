@@ -9,17 +9,21 @@ Write-Host "==========================================================" -Foregro
 $AppName = "rpa-bot"
 $DistPath = "dist\$AppName"
 
-# 2. Compilar con PyInstaller en modalidad --onedir
-Write-Host "Paso 1: Ejecutando PyInstaller (--onedir)..." -ForegroundColor Yellow
+# 2. Compilar con PyInstaller en modalidad --onedir (Limpia sin depender de archivo .spec)
+Write-Host "Paso 1: Ejecutando PyInstaller (--onedir, icono corporativo)..." -ForegroundColor Yellow
 
-pyinstaller --noconfirm --onedir --console `
+$PyInstallerExe = if (Test-Path ".\.venv\Scripts\pyinstaller.exe") { ".\.venv\Scripts\pyinstaller.exe" } else { "pyinstaller" }
+
+& $PyInstallerExe --noconfirm --onedir --console `
     --name "$AppName" `
+    --icon "assets/icons/python.ico" `
     --add-data "config;config" `
     --add-data "core;core" `
     --add-data "infrastructure;infrastructure" `
     --add-data "pages;pages" `
     --add-data "services;services" `
     --add-data "cli;cli" `
+    --add-data "assets;assets" `
     --hidden-import "keyring.backends.Windows" `
     --hidden-import "playwright" `
     --hidden-import "playwright.sync_api" `
@@ -27,6 +31,11 @@ pyinstaller --noconfirm --onedir --console `
     --hidden-import "requests" `
     --hidden-import "rich" `
     main.py
+
+# Limpieza de archivo .spec temporal generado por PyInstaller
+if (Test-Path "$AppName.spec") {
+    Remove-Item "$AppName.spec" -Force
+}
 
 # 3. Informar sobre operacion con navegadores nativos locales
 Write-Host "Paso 2: Operacion configurada con navegadores nativos del sistema (Google Chrome / Microsoft Edge)." -ForegroundColor Yellow

@@ -1,7 +1,7 @@
 """Orquestador del flujo de negocio para el Bot RPA."""
 
 import time
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 
 from config.logger_config import get_logger
@@ -32,7 +32,7 @@ class BotOrchestratorService:
             db: Instancia opcional de persistencia en base de datos.
             browser_manager: Gestor del ciclo de vida del navegador.
             notifiers: Lista o instancia unica de notificadores.
-            use_persistence: Si es False, desactiva la persistencia en SQLite.
+            use_persistence: Definido en el plan del bot; desactiva persistencia si es un bot stateless.
         """
         self.use_persistence = use_persistence
         self.db = db if db is not None else (BotDatabase() if use_persistence else None)
@@ -72,10 +72,13 @@ class BotOrchestratorService:
                 and self.db.is_already_completed(item.item_id)
             ):
                 logger.info("Item '%s' completado previamente. Omitiendo.", item.item_id)
+                now_local = datetime.now()
                 res = ExecutionResult(
                     item_id=item.item_id,
                     status=ExecutionStatus.SKIPPED,
                     details="Item procesado en ejecucion previa.",
+                    started_at=now_local,
+                    finished_at=now_local,
                 )
                 results.append(res)
             else:
@@ -100,18 +103,22 @@ class BotOrchestratorService:
             _portal = SamplePortalPage(page)
 
             for item in pending_items:
+                start_dt = datetime.now()
                 start_time = time.time()
                 try:
                     logger.info("Ejecutando tarea para item: %s", item.item_id)
+                    finish_dt = datetime.now()
                     duration = time.time() - start_time
                     result = ExecutionResult(
                         item_id=item.item_id,
                         status=ExecutionStatus.SUCCESS,
                         details="Item procesado exitosamente.",
                         duration_seconds=round(duration, 2),
-                        processed_at=datetime.now(UTC),
+                        started_at=start_dt,
+                        finished_at=finish_dt,
                     )
                 except Exception as e:
+                    finish_dt = datetime.now()
                     duration = time.time() - start_time
                     logger.error("Fallo el procesamiento del item '%s': %s", item.item_id, e)
                     result = ExecutionResult(
@@ -119,7 +126,8 @@ class BotOrchestratorService:
                         status=ExecutionStatus.FAILED,
                         error_message=str(e),
                         duration_seconds=round(duration, 2),
-                        processed_at=datetime.now(UTC),
+                        started_at=start_dt,
+                        finished_at=finish_dt,
                     )
 
                 if self.use_persistence and self.db:

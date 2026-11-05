@@ -145,14 +145,13 @@ def handle_run(args: argparse.Namespace) -> None:
 
     headless = args.headless
     browser_manager = BrowserManager(headless=headless)
-    use_persistence = not getattr(args, "no_db", False)
     orchestrator = BotOrchestratorService(
         browser_manager=browser_manager,
         notifiers=notifiers,
-        use_persistence=use_persistence,
+        use_persistence=True,
     )
 
-    console.print(f"[cyan]Iniciando procesamiento de {len(task_items)} items[/] (Modo Headless: [bold]{headless}[/], Persistencia DB: [bold]{use_persistence}[/])...")
+    console.print(f"[cyan]Iniciando procesamiento de {len(task_items)} items[/] (Modo Headless: [bold]{headless}[/])...")
 
     try:
         results = orchestrator.process_items(task_items, force_reprocess=args.force)
@@ -217,12 +216,6 @@ def main() -> None:
         "--force",
         action="store_true",
         help="Forzar reprocesamiento de items ya completados en SQLite",
-    )
-    run_parser.add_argument(
-        "--no-db",
-        action="store_true",
-        default=False,
-        help="Ejecutar sin persistencia en base de datos SQLite (opcional)",
     )
 
     # 2. auth command

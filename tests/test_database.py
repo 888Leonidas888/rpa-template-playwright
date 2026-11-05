@@ -1,6 +1,6 @@
 """Pruebas del repositorio de estado e historial SQLite en BotDatabase."""
 
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -24,7 +24,8 @@ def test_database_initialization(temp_db: BotDatabase) -> None:
 
 
 def test_save_and_get_record(temp_db: BotDatabase) -> None:
-    """Prueba el guardado y recuperacion de un registro de tarea."""
+    """Prueba el guardado y recuperacion de un registro de tarea con marcas de tiempo locales."""
+    now_local = datetime.now()
     result = ExecutionResult(
         item_id="DOC-001",
         status=ExecutionStatus.SUCCESS,
@@ -32,7 +33,8 @@ def test_save_and_get_record(temp_db: BotDatabase) -> None:
         details="Download completed successfully",
         attempts=1,
         duration_seconds=1.45,
-        processed_at=datetime.now(UTC),
+        started_at=now_local,
+        finished_at=now_local,
     )
     temp_db.save_record(result)
 
@@ -42,6 +44,10 @@ def test_save_and_get_record(temp_db: BotDatabase) -> None:
     assert record["status"] == ExecutionStatus.SUCCESS.value
     assert record["details"] == "Download completed successfully"
     assert "test.pdf" in record["output_files"]
+    assert record["started_at"] is not None
+    assert record["finished_at"] is not None
+    assert record["created_at"] is not None
+    assert record["updated_at"] is not None
 
 
 def test_idempotency_check(temp_db: BotDatabase) -> None:

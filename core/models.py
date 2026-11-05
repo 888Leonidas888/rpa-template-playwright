@@ -1,7 +1,7 @@
 """Modelos de dominio y definiciones de estado de ejecucion para tareas RPA."""
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -25,13 +25,13 @@ class TaskItem:
         item_id: Identificador unico del elemento (ej. numero de factura, orden de compra PO, codigo).
         item_type: Categoria o etiqueta (ej. 'invoice', 'report', 'query').
         payload: Metadatos o contexto adicional requerido para el procesamiento.
-        created_at: Marca de tiempo de creacion (timestamp).
+        created_at: Fecha y hora local de creacion de la tarea.
     """
 
     item_id: str
     item_type: str = "generic"
     payload: dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
@@ -46,7 +46,8 @@ class ExecutionResult:
         error_message: Descripcion del error si el estado es FAILED.
         attempts: Numero de intentos realizados.
         duration_seconds: Tiempo transcurrido de ejecucion en segundos.
-        processed_at: Marca de tiempo de finalizacion (timestamp).
+        started_at: Fecha y hora local de inicio del procesamiento de la tarea.
+        finished_at: Fecha y hora local de finalizacion del procesamiento de la tarea.
     """
 
     item_id: str
@@ -56,4 +57,10 @@ class ExecutionResult:
     error_message: str | None = None
     attempts: int = 1
     duration_seconds: float = 0.0
-    processed_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    started_at: datetime = field(default_factory=datetime.now)
+    finished_at: datetime = field(default_factory=datetime.now)
+
+    @property
+    def processed_at(self) -> datetime:
+        """Propiedad de compatibilidad que retorna la hora de finalizacion."""
+        return self.finished_at
