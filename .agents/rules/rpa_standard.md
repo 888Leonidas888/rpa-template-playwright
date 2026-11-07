@@ -51,10 +51,9 @@ Este documento define las directrices y restricciones obligatorias que **todo ag
 ## 7. Gestión de Credenciales en Windows DPAPI y Aislamiento por Bot
 * **Menú de Selección**: Al ejecutar `python main.py auth`, debe desplegarse un menú interactivo en consola para elegir qué servicio configurar:
   1. App Web (Portal objetivo)
-  2. App Interna / ERP (Sistema interno)
-  3. Conexión de Base de Datos
-  4. Microsoft Graph API
-  5. Destinatarios Microsoft Outlook Local
+  2. Conexión de Base de Datos
+  3. Microsoft Graph API
+  4. Destinatarios Microsoft Outlook Local
 * **Aislamiento de Nombres de Servicio DPAPI**: Dado que Windows Credential Manager almacena credenciales por usuario del sistema operativo, **cada bot debe definir nombres de servicio únicos** con su propio prefijo en `config/settings.py` (ej. `BOT_SUNAT_TARGET_PORTAL`, `BOT_TRADELINK_DATABASE`) para evitar colisiones o sobrescrituras entre bots en la misma máquina.
 * **Cero secretos en código o `.env`**: Toda clave sensible se cifra mediante Windows Credential Manager (DPAPI) con `keyring`.
 * **Ocultamiento de Infraestructura**: En respuestas de consola (`auth verify`) y reportes, queda prohibido exponer nombres reales de servidores internos o bases de datos; mostrar únicamente si el componente está configurado.

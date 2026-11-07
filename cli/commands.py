@@ -10,12 +10,10 @@ from rich.table import Table
 from config.logger_config import get_logger
 from config.security import (
     get_graph_credentials,
-    get_internal_app_credentials,
     get_outlook_recipients,
     get_portal_credentials,
     has_db_credentials,
     has_graph_credentials,
-    has_internal_app_credentials,
     has_outlook_recipients,
     has_portal_credentials,
     prompt_credentials_menu,
@@ -53,21 +51,13 @@ def handle_auth(args: argparse.Namespace) -> None:
         else:
             table.add_row("App Web", "[bold red]PENDIENTE[/]", "Requerido para navegacion")
 
-        # 2. App Interna / ERP
-        if has_internal_app_credentials():
-            creds = get_internal_app_credentials()
-            user = creds[0] if creds else "Configurado"
-            table.add_row("App Interna / ERP", "[bold green]CONFIGURADO[/]", f"Usuario: {user}")
-        else:
-            table.add_row("App Interna / ERP", "[yellow]NO CONFIGURADO[/]", "Opcional")
-
-        # 3. Base de Datos (Ocultando infraestructura sensible)
+        # 2. Base de Datos (Ocultando infraestructura sensible)
         if has_db_credentials():
             table.add_row("Base de Datos", "[bold green]CONFIGURADO[/]", "Parametros seguros en DPAPI")
         else:
             table.add_row("Base de Datos", "[yellow]NO CONFIGURADO[/]", "Opcional")
 
-        # 4. Microsoft Graph
+        # 3. Microsoft Graph
         if has_graph_credentials():
             g_conf = get_graph_credentials() or {}
             sender = g_conf.get("sender_email", "-")
@@ -76,7 +66,7 @@ def handle_auth(args: argparse.Namespace) -> None:
         else:
             table.add_row("Microsoft Graph", "[yellow]NO CONFIGURADO[/]", "Opcional")
 
-        # 5. Microsoft Outlook Local
+        # 4. Microsoft Outlook Local
         if has_outlook_recipients():
             count = len(get_outlook_recipients())
             table.add_row("Outlook Local", "[bold green]CONFIGURADO[/]", f"{count} destinatarios predeterminados")
