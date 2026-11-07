@@ -60,10 +60,9 @@ python main.py auth
 
 Opciones disponibles en el menú interactivo:
 1. **App Web**: Usuario y contraseña para el portal objetivo.
-2. **App Interna / ERP**: Credenciales para sistemas locales.
-3. **Base de Datos**: Host, base de datos, usuario y contraseña.
-4. **Microsoft Graph API**: Tenant ID, Client ID, Client Secret, remitente y destinatarios separados por `;`.
-5. **Outlook Local**: Lista de destinatarios separados por `;`.
+2. **Base de Datos**: Host, base de datos, usuario y contraseña.
+3. **Microsoft Graph API**: Tenant ID, Client ID, Client Secret, remitente y destinatarios separados por `;`.
+4. **Outlook Local**: Lista de destinatarios separados por `;`.
 
 Para verificar la presencia de credenciales sin revelar secretos:
 ```powershell

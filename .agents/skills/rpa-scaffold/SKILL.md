@@ -27,7 +27,6 @@ Todo bot debe configurar su propio prefijo en los nombres de servicio para no co
 ```python
 # Ejemplo para Bot Sunat
 CRED_SERVICE_PORTAL: str = "BOT_SUNAT_PORTAL"
-CRED_SERVICE_INTERNAL_APP: str = "BOT_SUNAT_INTERNAL_APP"
 CRED_SERVICE_DB: str = "BOT_SUNAT_DATABASE"
 CRED_SERVICE_GRAPH: str = "BOT_SUNAT_GRAPH"
 CRED_SERVICE_OUTLOOK: str = "BOT_SUNAT_OUTLOOK"

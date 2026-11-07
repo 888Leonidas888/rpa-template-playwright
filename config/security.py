@@ -11,7 +11,6 @@ from config.settings import (
     ALLOWED_DOMAINS,
     CRED_SERVICE_DB,
     CRED_SERVICE_GRAPH,
-    CRED_SERVICE_INTERNAL_APP,
     CRED_SERVICE_OUTLOOK,
     CRED_SERVICE_PORTAL,
 )
@@ -90,35 +89,7 @@ def has_portal_credentials() -> bool:
 
 
 # ============================================================================
-# 2. Credenciales de App Interna / ERP (Sistema Interno)
-# ============================================================================
-
-
-def save_internal_app_credentials(username: str, password: str) -> None:
-    """Guarda usuario y contrasena del sistema interno en Windows Credential Manager."""
-    clean_user = username.strip()
-    keyring.set_password(CRED_SERVICE_INTERNAL_APP, "_active_user", clean_user)
-    keyring.set_password(CRED_SERVICE_INTERNAL_APP, clean_user, password)
-
-
-def get_internal_app_credentials() -> tuple[str, str] | None:
-    """Recupera credenciales del sistema interno desde Windows Credential Manager."""
-    username = keyring.get_password(CRED_SERVICE_INTERNAL_APP, "_active_user")
-    if not username:
-        return None
-    password = keyring.get_password(CRED_SERVICE_INTERNAL_APP, username)
-    return (username, password) if password else None
-
-
-def has_internal_app_credentials() -> bool:
-    """Determina si existen credenciales configuradas para el sistema interno."""
-    creds = get_internal_app_credentials()
-    return creds is not None and len(creds[0]) > 0 and len(creds[1]) > 0
-
-
-
-# ============================================================================
-# 3. Credenciales de Conexion a Base de Datos
+# 2. Credenciales de Conexion a Base de Datos
 # ============================================================================
 
 
@@ -152,7 +123,7 @@ def has_db_credentials() -> bool:
 
 
 # ============================================================================
-# 4. Credenciales de Microsoft Graph API
+# 3. Credenciales de Microsoft Graph API
 # ============================================================================
 
 
@@ -196,7 +167,7 @@ def has_graph_credentials() -> bool:
 
 
 # ============================================================================
-# 5. Destinatarios de Microsoft Outlook Local
+# 4. Destinatarios de Microsoft Outlook Local
 # ============================================================================
 
 
@@ -235,14 +206,13 @@ def prompt_credentials_menu() -> None:
         print("    MENU DE GESTION DE CREDENCIALES EN WINDOWS (DPAPI)   ")
         print("========================================================")
         print(" 1. Configurar Credenciales App Web (Portal Objetivo)")
-        print(" 2. Configurar Credenciales App Interna / ERP")
-        print(" 3. Configurar Conexion de Base de Datos")
-        print(" 4. Configurar Microsoft Graph API (Correos con ';')")
-        print(" 5. Configurar Destinatarios Microsoft Outlook Local")
-        print(" 6. Salir")
+        print(" 2. Configurar Conexion de Base de Datos")
+        print(" 3. Configurar Microsoft Graph API (Correos con ';')")
+        print(" 4. Configurar Destinatarios Microsoft Outlook Local")
+        print(" 5. Salir")
         print("========================================================")
 
-        opcion = input("Seleccione una opcion (1-6): ").strip()
+        opcion = input("Seleccione una opcion (1-5): ").strip()
 
         if opcion == "1":
             print("\n--- Configuracion de App Web ---")
@@ -255,16 +225,6 @@ def prompt_credentials_menu() -> None:
                 print("[AVISO] Usuario y contrasena no pueden estar vacios.")
 
         elif opcion == "2":
-            print("\n--- Configuracion de App Interna / ERP ---")
-            user = input("Usuario: ").strip()
-            pwd = getpass.getpass("Contrasena: ").strip()
-            if user and pwd:
-                save_internal_app_credentials(user, pwd)
-                print("[OK] Credenciales de App Interna / ERP guardadas exitosamente.")
-            else:
-                print("[AVISO] Los campos no pueden estar vacios.")
-
-        elif opcion == "3":
             print("\n--- Configuracion de Base de Datos ---")
             host = input("Servidor / Host: ").strip()
             database = input("Nombre de Base de Datos: ").strip()
@@ -276,7 +236,7 @@ def prompt_credentials_menu() -> None:
             else:
                 print("[AVISO] Host, Base de Datos y Usuario son obligatorios.")
 
-        elif opcion == "4":
+        elif opcion == "3":
             print("\n--- Configuracion de Microsoft Graph API ---")
             tenant_id = input("Azure AD Tenant ID: ").strip()
             client_id = input("Azure AD Client ID: ").strip()
@@ -291,7 +251,7 @@ def prompt_credentials_menu() -> None:
             else:
                 print("[AVISO] Todos los campos y al menos un destinatario son obligatorios.")
 
-        elif opcion == "5":
+        elif opcion == "4":
             print("\n--- Configuracion de Destinatarios Outlook Local ---")
             recipients_raw = input("Destinatarios (separados por ';'): ").strip()
             recipients = [r.strip() for r in recipients_raw.split(";") if r.strip()]
@@ -301,8 +261,8 @@ def prompt_credentials_menu() -> None:
             else:
                 print("[AVISO] Ingrese al menos un correo destinatario.")
 
-        elif opcion == "6":
+        elif opcion == "5":
             print("Saliendo del menu de configuracion de credenciales.")
             break
         else:
-            print("[ERROR] Opcion no valida. Elija un numero entre 1 y 6.")
+            print("[ERROR] Opcion no valida. Elija un numero entre 1 y 5.")

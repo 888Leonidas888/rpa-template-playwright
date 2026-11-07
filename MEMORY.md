@@ -62,7 +62,6 @@ Accesible mediante el menú interactivo: `python main.py auth`
 | Servicio Configurable | Nombre de Servicio DPAPI (settings.py) | Tipo de Datos Almacenados | Uso Principal |
 | :--- | :--- | :--- | :--- |
 | **App Web** | `CRED_SERVICE_PORTAL` | `Usuario` y `Contraseña` cifrados | Portal externo objetivo para descargas y scraping |
-| **App Interna / ERP** | `CRED_SERVICE_INTERNAL_APP` | `Usuario` y `Contraseña` cifrados | Acceso a sistemas internos o ERP |
 | **Base de Datos** | `CRED_SERVICE_DB` | `Host`, `Database`, `User`, `Password` | Conexión directa a bases de datos relacionales |
 | **Microsoft Graph** | `CRED_SERVICE_GRAPH` | `Tenant ID`, `Client ID`, `Secret`, `Sender`, `Recipients` | Notificaciones desatendidas por correo corporativo |
 | **Outlook Local** | `CRED_SERVICE_OUTLOOK` | Lista de `Destinatarios` (separados por `;`) | Notificaciones a través de la sesión Outlook del equipo |

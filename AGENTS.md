@@ -30,7 +30,7 @@ Al trabajar en este proyecto o en cualquier bot derivado de él, debes seguir es
    - Prohibido emojis en UI o consola; usar exclusivamente **Font Awesome** o Bootstrap Icons.
    - Estilo visual oscuro Gemini (`#131314` fondo, `#1e1f20` tarjetas, `#a8c7fa` acentos).
 7. **Menú de Credenciales en `auth` y Aislamiento DPAPI**:
-   - Menú interactivo para configurar App Web, App Interna / ERP, Base de Datos, Microsoft Graph (correos con `;`) y Outlook local en Windows DPAPI.
+   - Menú interactivo para configurar App Web, Base de Datos, Microsoft Graph (correos con `;`) y Outlook local en Windows DPAPI.
    - Cada bot debe definir sus propios nombres de servicio únicos con prefijo en `config/settings.py` para aislar sus credenciales en Windows Credential Manager.
    - Ocultar nombres de infraestructura interna en consola.
 8. **Notificaciones Duales**:

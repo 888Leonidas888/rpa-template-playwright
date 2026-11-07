@@ -66,7 +66,6 @@ $settingsFile = Join-Path $Destination "config\settings.py"
 if (Test-Path $settingsFile) {
     $CleanPrefix = ($Name -replace '[^a-zA-Z0-9]', '_').ToUpper()
     (Get-Content $settingsFile) -replace 'CRED_SERVICE_PORTAL: str = "RPA_', "CRED_SERVICE_PORTAL: str = `"${CleanPrefix}_" `
-                                -replace 'CRED_SERVICE_INTERNAL_APP: str = "RPA_', "CRED_SERVICE_INTERNAL_APP: str = `"${CleanPrefix}_" `
                                 -replace 'CRED_SERVICE_DB: str = "RPA_', "CRED_SERVICE_DB: str = `"${CleanPrefix}_" `
                                 -replace 'CRED_SERVICE_GRAPH: str = "RPA_', "CRED_SERVICE_GRAPH: str = `"${CleanPrefix}_" `
                                 -replace 'CRED_SERVICE_OUTLOOK: str = "RPA_', "CRED_SERVICE_OUTLOOK: str = `"${CleanPrefix}_" | Set-Content $settingsFile

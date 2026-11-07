@@ -8,17 +8,14 @@ from config.security import (
     SecurityValidationError,
     get_db_credentials,
     get_graph_credentials,
-    get_internal_app_credentials,
     get_outlook_recipients,
     get_portal_credentials,
     has_db_credentials,
     has_graph_credentials,
-    has_internal_app_credentials,
     has_outlook_recipients,
     has_portal_credentials,
     save_db_credentials,
     save_graph_credentials,
-    save_internal_app_credentials,
     save_outlook_recipients,
     save_portal_credentials,
     validate_url,
@@ -66,24 +63,6 @@ def test_portal_credentials_roundtrip() -> None:
         assert has_portal_credentials()
         creds = get_portal_credentials()
         assert creds == ("operador@empresa.com", "ClaveSecreta123!")
-
-
-def test_internal_app_credentials_roundtrip() -> None:
-    """Verifica el guardado y recuperacion de credenciales de la app interna."""
-    fake_storage: dict[tuple[str, str], str] = {}
-
-    def mock_set(service: str, username: str, password: str) -> None:
-        fake_storage[(service, username)] = password
-
-    def mock_get(service: str, username: str):
-        return fake_storage.get((service, username))
-
-    with patch("keyring.set_password", side_effect=mock_set), patch(
-        "keyring.get_password", side_effect=mock_get
-    ):
-        save_internal_app_credentials("usuario_interno", "ClaveInterna123")
-        assert has_internal_app_credentials()
-        assert get_internal_app_credentials() == ("usuario_interno", "ClaveInterna123")
 
 
 def test_db_credentials_roundtrip() -> None:
